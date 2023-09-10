@@ -20,13 +20,20 @@ export const EmulatorProvider = ({
   const [registers, setRegisters] = useState(emulator.registers.getAll());
 
   useEffect(() => {
-    const registerUpdate = () => {
-      setRegisters(emulator.registers.getAll());
+    const handlers = {
+      'registerUpdate': () => {
+        setRegisters(emulator.registers.getAll());
+      }
     }
-    emulator.on('registerUpdate', registerUpdate);
+
+    Object.keys(handlers).forEach((event) => {
+      emulator.on((event as keyof typeof handlers), handlers[event as keyof typeof handlers]);
+    });
 
     return () => {
-      emulator.off('registerUpdate', registerUpdate);
+      Object.keys(handlers).forEach((event) => {
+        emulator.off((event as keyof typeof handlers), handlers[event as keyof typeof handlers]);
+      });
     };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
