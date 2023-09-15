@@ -1,62 +1,122 @@
 import { Instructions } from "../instructions";
-import { Flag, Registers } from "../registers";
+import { Flag } from "../registers";
+import { CPU } from "../";
 
 test("add a number with no overflow", () => {
-  const registers = new Registers(() => {});
-  const instructions = new Instructions(registers);
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
 
-  registers.set("a", 0x01);
-  registers.set("b", 0x02);
+  cpu.registers.set("a", 0x01);
+  cpu.registers.set("b", 0x02);
   instructions.add("b");
 
-  expect(registers.get("a")).toEqual(0x03);
-  expect(registers.getFlag(Flag.Carry)).toEqual(false);
-  expect(registers.getFlag(Flag.Zero)).toEqual(false);
-  expect(registers.getFlag(Flag.HalfCarry)).toEqual(false);
-  expect(registers.getFlag(Flag.Subtraction)).toEqual(false);
+  expect(cpu.registers.get("a")).toEqual(0x03);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
 });
 
 test("add a number with overflow", () => {
-  const registers = new Registers(() => {});
-  const instructions = new Instructions(registers);
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
 
-  registers.set("a", 0xff);
-  registers.set("b", 0x05);
+  cpu.registers.set("a", 0xff);
+  cpu.registers.set("b", 0x05);
   instructions.add("b");
 
-  expect(registers.get("a")).toEqual(0x04);
-  expect(registers.getFlag(Flag.Carry)).toEqual(true);
-  expect(registers.getFlag(Flag.Zero)).toEqual(false);
-  expect(registers.getFlag(Flag.HalfCarry)).toEqual(true);
-  expect(registers.getFlag(Flag.Subtraction)).toEqual(false);
+  expect(cpu.registers.get("a")).toEqual(0x04);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(true);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
 });
 
 test("add a number resulting in 0", () => {
-  const registers = new Registers(() => {});
-  const instructions = new Instructions(registers);
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
 
-  registers.set("a", 0x00);
-  registers.set("b", 0x00);
+  cpu.registers.set("a", 0x00);
+  cpu.registers.set("b", 0x00);
   instructions.add("b");
 
-  expect(registers.get("a")).toEqual(0x00);
-  expect(registers.getFlag(Flag.Carry)).toEqual(false);
-  expect(registers.getFlag(Flag.Zero)).toEqual(true);
-  expect(registers.getFlag(Flag.HalfCarry)).toEqual(false);
-  expect(registers.getFlag(Flag.Subtraction)).toEqual(false);
+  expect(cpu.registers.get("a")).toEqual(0x00);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(true);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
 });
 
 test("add a number resulting in half carry", () => {
-  const registers = new Registers(() => {});
-  const instructions = new Instructions(registers);
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
 
-  registers.set("a", 0b1000_1111);
-  registers.set("b", 0b0000_0001);
+  cpu.registers.set("a", 0b1000_1111);
+  cpu.registers.set("b", 0b0000_0001);
   instructions.add("b");
 
-  expect(registers.get("a")).toEqual(0b1001_0000);
-  expect(registers.getFlag(Flag.Carry)).toEqual(false);
-  expect(registers.getFlag(Flag.Zero)).toEqual(false);
-  expect(registers.getFlag(Flag.HalfCarry)).toEqual(true);
-  expect(registers.getFlag(Flag.Subtraction)).toEqual(false);
+  expect(cpu.registers.get("a")).toEqual(0b1001_0000);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(true);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
+});
+
+test("adding a number directly", () => {
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
+
+  cpu.registers.set("a", 0x01);
+  instructions.add(0x02);
+
+  expect(cpu.registers.get("a")).toEqual(0x03);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
+});
+
+test("adding with HL", () => {
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
+
+  cpu.registers.set("hl", 0x0001);
+  cpu.registers.set("bc", 0x1111);
+  instructions.add("bc");
+
+  expect(cpu.registers.get("hl")).toEqual(0x1112);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
+});
+
+test("adding with HL with carry", () => {
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
+
+  cpu.registers.set("hl", 0xffff);
+  cpu.registers.set("bc", 0x0001);
+  instructions.add("bc");
+
+  expect(cpu.registers.get("hl")).toEqual(0x0000);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(true);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(true);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
+});
+
+test("adding with HL with half carry", () => {
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
+
+  cpu.registers.set("hl", 0x00ff);
+  cpu.registers.set("bc", 0x0001);
+  instructions.add("bc");
+
+  expect(cpu.registers.get("hl")).toEqual(0x0100);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(true);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
 });

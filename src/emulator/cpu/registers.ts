@@ -1,8 +1,26 @@
 import { Emitter } from "..";
 
-const EIGHT_BIT_REGISTERS = ["a", "b", "c", "d", "e", "f", "h", "l"] as const;
-const ARITHMETIC_REGISTERS = ["a", "b", "c", "d", "e", "h", "l"] as const;
-const SIXTEEN_BIT_REGISTERS = ["af", "bc", "de", "hl"] as const;
+export const EIGHT_BIT_REGISTERS = [
+  "a",
+  "b",
+  "c",
+  "d",
+  "e",
+  "f",
+  "h",
+  "l",
+] as const;
+export const SIXTEEN_BIT_REGISTERS = ["af", "bc", "de", "hl"] as const;
+export const ARITHMETIC_REGISTERS = [
+  "a",
+  "b",
+  "c",
+  "d",
+  "e",
+  "h",
+  "l",
+  ...SIXTEEN_BIT_REGISTERS,
+] as const;
 
 export enum Flag {
   Zero = "Zero",
@@ -56,20 +74,17 @@ export class Registers {
   l: number = 0;
 
   set(reg: RegisterName, value: number) {
-    if (value <= 0xff) {
-      if (!EIGHT_BIT_REGISTERS.includes(reg as EightBitRegisterName)) {
+    if (EIGHT_BIT_REGISTERS.includes(reg as EightBitRegisterName)) {
+      if (value > 0xff) {
         throw new Error(`Cannot set ${reg} to ${value}!`);
       }
 
       this[reg as EightBitRegisterName] = value;
     } else {
-      if (!SIXTEEN_BIT_REGISTERS.includes(reg as SixteenBitRegisterName)) {
-        throw new Error(`Cannot set ${reg} to ${value}!`);
-      }
-
       const [reg1, reg2] = reg.split("") as EightBitRegisterName[];
-      this[reg1] = (value >> 8) & 0xff;
-      this[reg2] = value & 0xff;
+
+      this.set(reg1, (value >> 8) & 0xff);
+      this.set(reg2, value & 0xff);
     }
 
     this.emit("registerUpdate", new RegisterUpdateEvent(reg, value));
