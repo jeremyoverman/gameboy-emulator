@@ -53,7 +53,22 @@ test("Test getting the Zero flag", () => {
   const registers = new Registers(() => {});
   registers.setFlag(Flag.Zero, true);
 
-  console.log("est");
-
   expect(registers.getFlag(Flag.Zero)).toEqual(true);
+});
+
+test("Setting the half carry and subtraction flags", () => {
+  const registers = new Registers(() => {});
+  registers.setFlag(Flag.HalfCarry, true);
+  registers.setFlag(Flag.Subtraction, true);
+
+  expect(registers.f).toEqual(0b01100000);
+});
+
+test("Getting the half carry and subtraction flags", () => {
+  const registers = new Registers(() => {});
+  registers.setFlag(Flag.HalfCarry, true);
+  registers.setFlag(Flag.Subtraction, true);
+
+  expect(registers.getFlag(Flag.HalfCarry)).toEqual(true);
+  expect(registers.getFlag(Flag.Subtraction)).toEqual(true);
 });

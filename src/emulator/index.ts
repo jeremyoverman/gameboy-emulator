@@ -1,6 +1,6 @@
-import { RegisterEventMap, Registers } from "./cpu/registers";
+import { CPU, CPUEventMap } from "./cpu";
 
-type EventMap = RegisterEventMap;
+type EventMap = CPUEventMap;
 
 export type SubscriptionFunction = () => void;
 export type Emitter<T extends keyof EventMap> = (
@@ -9,10 +9,15 @@ export type Emitter<T extends keyof EventMap> = (
 ) => void;
 
 export class Emulator {
-  public registers: Registers;
+  public cpu: CPU;
 
-  private eventListeners: { [key in keyof EventMap]?: Array<EventMap[key]> } =
-    {};
+  private eventListeners: {
+    [key in keyof EventMap]?: Array<EventMap[key]>;
+  } = {};
+
+  constructor() {
+    this.cpu = new CPU(this.emit);
+  }
 
   // Method to register an event listener
   on<T extends keyof EventMap>(event: T, callback: EventMap[T]): void {
@@ -35,8 +40,4 @@ export class Emulator {
   private emit: Emitter<keyof EventMap> = (event, data) => {
     this.eventListeners[event]?.forEach((callback) => callback(data));
   };
-
-  constructor() {
-    this.registers = new Registers(this.emit);
-  }
 }

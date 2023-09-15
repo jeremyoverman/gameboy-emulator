@@ -1,6 +1,7 @@
 import { Emitter } from "..";
 
 const EIGHT_BIT_REGISTERS = ["a", "b", "c", "d", "e", "f", "h", "l"] as const;
+const ARITHMETIC_REGISTERS = ["a", "b", "c", "d", "e", "h", "l"] as const;
 const SIXTEEN_BIT_REGISTERS = ["af", "bc", "de", "hl"] as const;
 
 export enum Flag {
@@ -17,9 +18,10 @@ const FLAG_POSITIONS = {
   [Flag.Carry]: 7,
 };
 
-type EightBitRegisterName = (typeof EIGHT_BIT_REGISTERS)[number];
-type SixteenBitRegisterName = (typeof SIXTEEN_BIT_REGISTERS)[number];
-type RegisterName = EightBitRegisterName | SixteenBitRegisterName;
+export type EightBitRegisterName = (typeof EIGHT_BIT_REGISTERS)[number];
+export type ArithmeticRegisterName = (typeof ARITHMETIC_REGISTERS)[number];
+export type SixteenBitRegisterName = (typeof SIXTEEN_BIT_REGISTERS)[number];
+export type RegisterName = EightBitRegisterName | SixteenBitRegisterName;
 
 export type RegisterUpdateCallback = (event: RegisterUpdateEvent) => void;
 
@@ -82,7 +84,7 @@ export class Registers {
   }
 
   getFlag(flag: Flag) {
-    return this.f >> FLAG_POSITIONS[flag] == 1;
+    return ((this.f >> FLAG_POSITIONS[flag]) & 1) === 1;
   }
 
   get(reg: RegisterName) {
