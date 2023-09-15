@@ -1,6 +1,6 @@
 import { Instructions } from "../instructions";
 import { Flag } from "../registers";
-import { CPU } from "../";
+import { CPU } from "../cpu";
 
 test("add a number with no overflow", () => {
   const cpu = new CPU(() => {});

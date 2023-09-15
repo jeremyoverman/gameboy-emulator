@@ -1,6 +1,6 @@
 import { Instructions } from "../instructions";
 import { Flag } from "../registers";
-import { CPU } from "../";
+import { CPU } from "../cpu";
 
 test("complinents the accumulator", () => {
   const cpu = new CPU(() => {});

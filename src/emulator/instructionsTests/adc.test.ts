@@ -1,4 +1,4 @@
-import { CPU } from "..";
+import { CPU } from "../cpu";
 import { Instructions } from "../instructions";
 import { Flag } from "../registers";
 

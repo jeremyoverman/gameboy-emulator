@@ -1,8 +1,8 @@
-import { CPU } from ".";
+import { CPU } from "./cpu";
 import {
   ArithmeticRegisterName,
   Flag,
-  SIXTEEN_BIT_REGISTERS,
+  RegisterName,
   SixteenBitRegisterName,
 } from "./registers";
 
@@ -110,13 +110,61 @@ export class Instructions {
       return false;
     }
 
-    return SIXTEEN_BIT_REGISTERS.includes(source as SixteenBitRegisterName);
+    return this.cpu.registers.is16Bit(source as SixteenBitRegisterName);
+  }
+
+  _rotate(
+    reg: RegisterName,
+    direction: "left" | "right",
+    throughCarry?: boolean,
+    shift?: boolean,
+    preserveMsb?: boolean
+  ) {
+    const is16Bit = this.cpu.registers.is16Bit(reg as SixteenBitRegisterName);
+    const value = this.cpu.registers.get(reg);
+    const leftBit = is16Bit ? 15 : 7;
+    const msb = (value >> leftBit) & 0x1;
+
+    // Get the bit that will be shifted out
+    const bit = direction === "left" ? leftBit : 0;
+    const bitValue = (value >> bit) & 0x1;
+
+    // Shift the value
+    let result = direction === "left" ? value << 1 : value >> 1;
+
+    result = result & (is16Bit ? 0xffff : 0xff);
+
+    if (!shift) {
+      result = result | (bitValue << (direction === "left" ? 0 : leftBit));
+    }
+
+    if (preserveMsb) {
+      result = result | (msb << leftBit);
+    }
+
+    if (throughCarry) {
+      // Set the bit that was shifted out to the carry flag
+      if (this.cpu.registers.getFlag(Flag.Carry)) {
+        const sigMask = is16Bit ? 0x8000 : 0x80;
+        result = result | (direction === "left" ? 0x1 : sigMask);
+      }
+    }
+
+    this.cpu.registers.set(reg, result);
+    this.cpu.registers.setFlag(Flag.Carry, bitValue === 1);
+    this.cpu.registers.setFlag(Flag.Subtraction, false);
+    this.cpu.registers.setFlag(Flag.HalfCarry, false);
+    this.cpu.registers.setFlag(Flag.Zero, result === 0);
   }
 
   nop() {}
 
   halt() {
     this.cpu.halt();
+  }
+
+  stop() {
+    this.cpu.stop();
   }
 
   bit(source: ArithmeticRegisterName, bit: number) {
@@ -278,5 +326,66 @@ export class Instructions {
     this.cpu.registers.setFlag(Flag.Zero, newValue == 0);
     this.cpu.registers.setFlag(Flag.HalfCarry, false);
     this.cpu.registers.set("a", newValue);
+  }
+
+  rlca() {
+    this._rotate("a", "left");
+  }
+
+  rla() {
+    this._rotate("a", "left", true);
+  }
+
+  rrca() {
+    this._rotate("a", "right");
+  }
+
+  rra() {
+    this._rotate("a", "right", true);
+  }
+
+  rlc(reg: RegisterName) {
+    this._rotate(reg, "left");
+  }
+
+  rl(reg: RegisterName) {
+    this._rotate(reg, "left", true);
+  }
+
+  rrc(reg: RegisterName) {
+    this._rotate(reg, "right");
+  }
+
+  rr(reg: RegisterName) {
+    this._rotate(reg, "right", true);
+  }
+
+  sla(reg: RegisterName) {
+    this._rotate(reg, "left", false, true);
+  }
+
+  sra(reg: RegisterName) {
+    this._rotate(reg, "right", false, true, true);
+  }
+
+  srl(reg: RegisterName) {
+    this._rotate(reg, "right", false, true);
+  }
+
+  swap(reg: RegisterName) {
+    const value = this.cpu.registers.get(reg);
+
+    const shift = this.cpu.registers.is16Bit(reg) ? 8 : 4;
+    const lowerMask = this.cpu.registers.is16Bit(reg) ? 0xff : 0xf;
+
+    const low = value & lowerMask;
+    const high = (value >> shift) & lowerMask;
+    const result = (low << shift) | high;
+
+    this.cpu.registers.set(reg, result);
+    this.cpu.registers.setFlag(Flag.Carry, false);
+    this.cpu.registers.setFlag(Flag.Subtraction, false);
+    this.cpu.registers.setFlag(Flag.HalfCarry, false);
+    this.cpu.registers.setFlag(Flag.Zero, result === 0);
   }
 }

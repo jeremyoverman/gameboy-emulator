@@ -1,45 +1,45 @@
 import { Instructions } from "../instructions";
 import { Flag } from "../registers";
-import { CPU } from "../";
+import { CPU } from "../cpu";
 
-test("anding two numbers", () => {
+test("xoring two numbers", () => {
   const cpu = new CPU(() => {});
   const instructions = new Instructions(cpu);
 
   cpu.registers.set("a", 0b00000111);
   cpu.registers.set("b", 0b00000101);
-  instructions.and("b");
+  instructions.xor("b");
 
-  expect(cpu.registers.get("a")).toEqual(0b00000101);
+  expect(cpu.registers.get("a")).toEqual(0b00000010);
   expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
   expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
   expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
   expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
 });
 
-test("anding with direct value", () => {
+test("xoring two numbers directly", () => {
   const cpu = new CPU(() => {});
   const instructions = new Instructions(cpu);
 
   cpu.registers.set("a", 0b00000111);
-  instructions.and(0b00000101);
+  instructions.xor(0b00000101);
 
-  expect(cpu.registers.get("a")).toEqual(0b00000101);
+  expect(cpu.registers.get("a")).toEqual(0b00000010);
   expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
   expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
   expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
   expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
 });
 
-test("anding two numbers with HL", () => {
+test("xoring two 16bit numbers", () => {
   const cpu = new CPU(() => {});
   const instructions = new Instructions(cpu);
 
-  cpu.registers.set("hl", 0b1111_0000_1111_0000);
-  cpu.registers.set("bc", 0b1111_0000_0000_0000);
-  instructions.and("bc");
+  cpu.registers.set("hl", 0b00000111_00000000);
+  cpu.registers.set("bc", 0b00000101_00000000);
+  instructions.xor("bc");
 
-  expect(cpu.registers.get("bc")).toEqual(0b1111_0000_0000_0000);
+  expect(cpu.registers.get("hl")).toEqual(0b00000010_00000000);
   expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
   expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
   expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);

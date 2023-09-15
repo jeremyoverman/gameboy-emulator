@@ -1,6 +1,6 @@
 import { Instructions } from "../instructions";
 import { Flag } from "../registers";
-import { CPU } from "../";
+import { CPU } from "../cpu";
 
 test("A = 0x80, H = 0, C = 0, N = 1", () => {
   const cpu = new CPU(() => {});

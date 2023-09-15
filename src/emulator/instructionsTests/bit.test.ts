@@ -1,6 +1,6 @@
 import { Instructions } from "../instructions";
 import { Flag } from "../registers";
-import { CPU } from "../";
+import { CPU } from "../cpu";
 
 test("An 8 bit register with a bit set", () => {
   const cpu = new CPU(() => {});

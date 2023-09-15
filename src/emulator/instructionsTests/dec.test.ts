@@ -1,6 +1,6 @@
 import { Instructions } from "../instructions";
 import { Flag } from "../registers";
-import { CPU } from "../";
+import { CPU } from "../cpu";
 
 test("decrementing a register", () => {
   const cpu = new CPU(() => {});

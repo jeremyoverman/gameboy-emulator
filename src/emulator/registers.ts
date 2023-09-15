@@ -1,4 +1,4 @@
-import { Emitter } from "..";
+import { Emitter } from ".";
 
 export const EIGHT_BIT_REGISTERS = [
   "a",
@@ -72,6 +72,10 @@ export class Registers {
   f: number = 0;
   h: number = 0;
   l: number = 0;
+
+  is16Bit(reg: RegisterName) {
+    return SIXTEEN_BIT_REGISTERS.includes(reg as SixteenBitRegisterName);
+  }
 
   set(reg: RegisterName, value: number) {
     if (EIGHT_BIT_REGISTERS.includes(reg as EightBitRegisterName)) {

@@ -1,4 +1,4 @@
-import { CPU } from "..";
+import { CPU } from "../cpu";
 import { Instructions } from "../instructions";
 
 test("Setting a 0 bit on an 8 bit register", () => {
