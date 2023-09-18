@@ -1,46 +1,299 @@
-import { readFile } from "fs";
-export const opCodes = {} as const;
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import {CPU} from './cpu'
 
-const readOpcodes = () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows: { [key: string]: any } = {};
+export const opCodes = {} as const
 
-  readFile("./docs/reference/opcodes.csv", "utf8", (err, data) => {
-    if (err) {
-      console.error(err);
-      return;
-    }
+type OpCodeDefinition = {
+  run?: (pc: number) => number
+  name: string
+  length: number
+  cycles: number | number[]
+} | null
 
-    const lines = data.split("\n");
-    lines.forEach((line, line_idx) => {
-      const cols = line.split(";");
-      if (line_idx === 0) return;
+// const range = (start: number, end: number) => {
+//   return Array.from({ length: end - start + 1 }, (_, i) => i + start);
+// };
 
-      let msb = "";
-      cols.forEach((col, col_idx) => {
-        if (col_idx === 0) {
-          msb = (line_idx - 1).toString(16);
-          rows[msb] = {};
-          return;
-        }
+export class OpCodes {
+  private cpu: CPU
 
-        const lsb = (col_idx - 1).toString(16);
-        const [name, length, flags] = col.split("%");
-        try {
-          rows[msb][lsb] = {
-            name,
-            length: length.split("  ")[0],
-            cycles: length.split("  ")[1],
-            flags,
-          };
-        } catch (e) {
-          rows[msb][lsb] = null;
-        }
-      });
-    });
+  constructor(cpu: CPU) {
+    this.cpu = cpu
+  }
 
-    console.log(rows["0"]);
-  });
-};
+  // private getNextBytes(length: number) {
+  //   const bytes = [];
 
-readOpcodes();
+  //   for (let i = 0; i < length; i++) {
+  //     bytes.push(this.cpu.memory.readByte(this.cpu.pc + i));
+  //   }
+
+  //   return bytes;
+  // }
+
+  opcodes: Record<number, OpCodeDefinition> = {
+    0x00: {name: 'NOP', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x01: {name: 'LD BC,d16', length: 3, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x02: {name: 'LD (BC),A', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x03: {name: 'INC BC', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x04: {name: 'INC B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x05: {name: 'DEC B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x06: {name: 'LD B,d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x07: {name: 'RLCA', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x08: {name: 'LD (a16),SP', length: 3, cycles: 20, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x09: {name: 'ADD HL,BC', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x0a: {name: 'LD A,(BC)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x0b: {name: 'DEC BC', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x0c: {name: 'INC C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x0d: {name: 'DEC C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x0e: {name: 'LD C,d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x0f: {name: 'RRCA', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x10: {name: 'STOP 0', length: 2, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x11: {name: 'LD DE,d16', length: 3, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x12: {name: 'LD (DE),A', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x13: {name: 'INC DE', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x14: {name: 'INC D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x15: {name: 'DEC D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x16: {name: 'LD D,d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x17: {name: 'RLA', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x18: {name: 'JR r8', length: 2, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x19: {name: 'ADD HL,DE', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x1a: {name: 'LD A,(DE)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x1b: {name: 'DEC DE', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x1c: {name: 'INC E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x1d: {name: 'DEC E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x1e: {name: 'LD E,d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x1f: {name: 'RRA', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x20: {name: 'JR NZ,r8', length: 2, cycles: [12, 8], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x21: {name: 'LD HL,d16', length: 3, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x22: {name: 'LD (HL+),A', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x23: {name: 'INC HL', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x24: {name: 'INC H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x25: {name: 'DEC H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x26: {name: 'LD H,d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x27: {name: 'DAA', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x28: {name: 'JR Z,r8', length: 2, cycles: [12, 8], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x29: {name: 'ADD HL,HL', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x2a: {name: 'LD A,(HL+)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x2b: {name: 'DEC HL', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x2c: {name: 'INC L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x2d: {name: 'DEC L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x2e: {name: 'LD L,d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x2f: {name: 'CPL', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x30: {name: 'JR NC,r8', length: 2, cycles: [12, 8], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x31: {name: 'LD SP,d16', length: 3, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x32: {name: 'LD (HL-),A', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x33: {name: 'INC SP', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x34: {name: 'INC (HL)', length: 1, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x35: {name: 'DEC (HL)', length: 1, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x36: {name: 'LD (HL),d8', length: 2, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x37: {name: 'SCF', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x38: {name: 'JR C,r8', length: 2, cycles: [12, 8], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x39: {name: 'ADD HL,SP', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x3a: {name: 'LD A,(HL-)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x3b: {name: 'DEC SP', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x3c: {name: 'INC A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x3d: {name: 'DEC A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x3e: {name: 'LD A,d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x3f: {name: 'CCF', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x40: {name: 'LD B,B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x41: {name: 'LD B,C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x42: {name: 'LD B,D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x43: {name: 'LD B,E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x44: {name: 'LD B,H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x45: {name: 'LD B,L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x46: {name: 'LD B,(HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x47: {name: 'LD B,A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x48: {name: 'LD C,B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x49: {name: 'LD C,C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x4a: {name: 'LD C,D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x4b: {name: 'LD C,E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x4c: {name: 'LD C,H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x4d: {name: 'LD C,L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x4e: {name: 'LD C,(HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x4f: {name: 'LD C,A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x50: {name: 'LD D,B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x51: {name: 'LD D,C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x52: {name: 'LD D,D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x53: {name: 'LD D,E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x54: {name: 'LD D,H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x55: {name: 'LD D,L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x56: {name: 'LD D,(HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x57: {name: 'LD D,A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x58: {name: 'LD E,B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x59: {name: 'LD E,C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x5a: {name: 'LD E,D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x5b: {name: 'LD E,E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x5c: {name: 'LD E,H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x5d: {name: 'LD E,L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x5e: {name: 'LD E,(HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x5f: {name: 'LD E,A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x60: {name: 'LD H,B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x61: {name: 'LD H,C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x62: {name: 'LD H,D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x63: {name: 'LD H,E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x64: {name: 'LD H,H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x65: {name: 'LD H,L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x66: {name: 'LD H,(HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x67: {name: 'LD H,A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x68: {name: 'LD L,B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x69: {name: 'LD L,C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x6a: {name: 'LD L,D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x6b: {name: 'LD L,E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x6c: {name: 'LD L,H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x6d: {name: 'LD L,L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x6e: {name: 'LD L,(HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x6f: {name: 'LD L,A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x70: {name: 'LD (HL),B', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x71: {name: 'LD (HL),C', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x72: {name: 'LD (HL),D', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x73: {name: 'LD (HL),E', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x74: {name: 'LD (HL),H', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x75: {name: 'LD (HL),L', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x76: {name: 'HALT', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x77: {name: 'LD (HL),A', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x78: {name: 'LD A,B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x79: {name: 'LD A,C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x7a: {name: 'LD A,D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x7b: {name: 'LD A,E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x7c: {name: 'LD A,H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x7d: {name: 'LD A,L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x7e: {name: 'LD A,(HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x7f: {name: 'LD A,A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x80: {name: 'ADD A,B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x81: {name: 'ADD A,C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x82: {name: 'ADD A,D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x83: {name: 'ADD A,E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x84: {name: 'ADD A,H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x85: {name: 'ADD A,L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x86: {name: 'ADD A,(HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x87: {name: 'ADD A,A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x88: {name: 'ADC A,B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x89: {name: 'ADC A,C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x8a: {name: 'ADC A,D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x8b: {name: 'ADC A,E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x8c: {name: 'ADC A,H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x8d: {name: 'ADC A,L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x8e: {name: 'ADC A,(HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x8f: {name: 'ADC A,A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x90: {name: 'SUB B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x91: {name: 'SUB C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x92: {name: 'SUB D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x93: {name: 'SUB E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x94: {name: 'SUB H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x95: {name: 'SUB L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x96: {name: 'SUB (HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x97: {name: 'SUB A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x98: {name: 'SBC A,B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x99: {name: 'SBC A,C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x9a: {name: 'SBC A,D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x9b: {name: 'SBC A,E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x9c: {name: 'SBC A,H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x9d: {name: 'SBC A,L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x9e: {name: 'SBC A,(HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0x9f: {name: 'SBC A,A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xa0: {name: 'AND B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xa1: {name: 'AND C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xa2: {name: 'AND D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xa3: {name: 'AND E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xa4: {name: 'AND H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xa5: {name: 'AND L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xa6: {name: 'AND (HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xa7: {name: 'AND A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xa8: {name: 'XOR B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xa9: {name: 'XOR C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xaa: {name: 'XOR D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xab: {name: 'XOR E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xac: {name: 'XOR H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xad: {name: 'XOR L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xae: {name: 'XOR (HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xaf: {name: 'XOR A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xb0: { name: 'OR B', length: 1, cycles: 4, run: (pc: number) => {
+        this.cpu.instructions.or('b')
+        return pc + 1
+    }},
+    0xb1: {name: 'OR C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xb2: {name: 'OR D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xb3: {name: 'OR E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xb4: {name: 'OR H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xb5: {name: 'OR L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xb6: {name: 'OR (HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xb7: { name: 'OR A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xb8: {name: 'CP B', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xb9: {name: 'CP C', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xba: {name: 'CP D', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xbb: {name: 'CP E', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xbc: {name: 'CP H', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xbd: {name: 'CP L', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xbe: {name: 'CP (HL)', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xbf: {name: 'CP A', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xc0: {name: 'RET NZ', length: 1, cycles: [20, 8], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xc1: {name: 'POP BC', length: 1, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xc2: {name: 'JP NZ,a16', length: 3, cycles: [16, 12], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xc3: {name: 'JP a16', length: 3, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xc4: {name: 'CALL NZ,a16', length: 3, cycles: [24, 12], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xc5: {name: 'PUSH BC', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xc6: {name: 'ADD A,d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xc7: {name: 'RST 00H', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xc8: {name: 'RET Z', length: 1, cycles: [20, 8], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xc9: {name: 'RET', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xca: {name: 'JP Z,a16', length: 3, cycles: [16, 12], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xcb: {name: 'PREFIX CB', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xcc: {name: 'CALL Z,a16', length: 3, cycles: [24, 12], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xcd: {name: 'CALL a16', length: 3, cycles: 24, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xce: {name: 'ADC A,d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xcf: {name: 'RST 08H', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xd0: {name: 'RET NC', length: 1, cycles: [20, 8], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xd1: {name: 'POP DE', length: 1, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xd2: {name: 'JP NC,a16', length: 3, cycles: [16, 12], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xd3: null,
+    0xd4: {name: 'CALL NC,a16', length: 3, cycles: [24, 12], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xd5: {name: 'PUSH DE', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xd6: {name: 'SUB d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xd7: {name: 'RST 10H', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xd8: {name: 'RET C', length: 1, cycles: [20, 8], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xd9: {name: 'RETI', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xda: {name: 'JP C,a16', length: 3, cycles: [16, 12], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xdb: null,
+    0xdc: {name: 'CALL C,a16', length: 3, cycles: [24, 12], run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xdd: null,
+    0xde: {name: 'SBC A,d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xdf: {name: 'RST 18H', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xe0: {name: 'LDH (a8),A', length: 2, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xe1: {name: 'POP HL', length: 1, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xe2: {name: 'LD (C),A', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xe3: null,
+    0xe4: null,
+    0xe5: {name: 'PUSH HL', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xe6: {name: 'AND d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xe7: {name: 'RST 20H', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xe8: {name: 'ADD SP,r8', length: 2, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xe9: {name: 'JP (HL)', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xea: {name: 'LD (a16),A', length: 3, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xeb: null,
+    0xec: null,
+    0xed: null,
+    0xee: {name: 'XOR d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xef: {name: 'RST 28H', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xf0: {name: 'LDH A,(a8)', length: 2, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xf1: {name: 'POP AF', length: 1, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xf2: {name: 'LD A,(C)', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xf3: {name: 'DI', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xf4: null,
+    0xf5: {name: 'PUSH AF', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xf6: {name: 'OR d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xf7: {name: 'RST 30H', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xf8: {name: 'LD HL,SP+r8', length: 2, cycles: 12, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xf9: {name: 'LD SP,HL', length: 1, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xfa: {name: 'LD A,(a16)', length: 3, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xfb: {name: 'EI', length: 1, cycles: 4, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xfc: null,
+    0xfd: null,
+    0xfe: {name: 'CP d8', length: 2, cycles: 8, run: (pc: number) => { throw new Error('Not Implemented') }},
+    0xff: {name: 'RST 38H', length: 1, cycles: 16, run: (pc: number) => { throw new Error('Not Implemented') }},
+  }
+}
+
+// const or_opcodes = range(0xb0, 0xb7).map((opcode) => {
+//   return opcode;
+// });

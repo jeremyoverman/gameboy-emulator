@@ -15,7 +15,7 @@ type ArithmeticReturn = {
 };
 
 export class Instructions {
-  cpu: CPU;
+  private cpu: CPU;
 
   constructor(cpu: CPU) {
     this.cpu = cpu;
