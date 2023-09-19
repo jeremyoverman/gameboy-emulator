@@ -12,8 +12,6 @@ export class CPU {
   memory: Memory;
   opcodes: OpCodes;
 
-  pc: number = 0;
-
   halted: boolean = false;
   stopped: boolean = false;
 
@@ -25,19 +23,29 @@ export class CPU {
   }
 
   step() {
-    const instructionByte = this.memory.readByte(this.pc);
-    const opcode = this.opcodes.opcodes[instructionByte];
+    let isPrefix = false;
+    let instructionByte = this.memory.readByte(this.registers.get('pc'));
 
-    if (!opcode?.run) {
+    if (instructionByte === 0xcb) {
+      isPrefix = true;
+      instructionByte = this.memory.readByte(this.registers.get('pc') + 1);
+    }
+
+    const opcodeTable = isPrefix ? this.opcodes.cb_opcodes : this.opcodes.opcodes;
+    const opcode = opcodeTable[instructionByte];
+
+    if (!opcode) {
       throw new Error(`${instructionByte} not implemented!`);
     }
 
-    const result = opcode.run(this.pc);
+    // Prefix instructions don't have arguments
+    const args = isPrefix ? new Uint8Array(0) : this.memory.readNext(this.registers.get('pc'), opcode.length - 1)
+    const result = opcode.run(this.registers.get('pc'), args);
 
     if (result !== undefined) {
-      this.pc = result;
+      this.registers.set('pc', result);
     } else {
-      this.pc += opcode.length;
+      this.registers.set('pc', this.registers.get('pc') + opcode.length);
     }
   }
 

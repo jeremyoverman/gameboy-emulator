@@ -3,7 +3,7 @@ import {
   ArithmeticRegisterName,
   Flag,
   RegisterName,
-  SixteenBitRegisterName,
+  CommonSixteenBitRegisterName,
 } from "./registers";
 
 type ArithmeticReturn = {
@@ -110,7 +110,7 @@ export class Instructions {
       return false;
     }
 
-    return this.cpu.registers.is16Bit(source as SixteenBitRegisterName);
+    return this.cpu.registers.is16Bit(source as CommonSixteenBitRegisterName);
   }
 
   _rotate(
@@ -120,7 +120,7 @@ export class Instructions {
     shift?: boolean,
     preserveMsb?: boolean
   ) {
-    const is16Bit = this.cpu.registers.is16Bit(reg as SixteenBitRegisterName);
+    const is16Bit = this.cpu.registers.is16Bit(reg as CommonSixteenBitRegisterName);
     const value = this.cpu.registers.get(reg);
     const leftBit = is16Bit ? 15 : 7;
     const msb = (value >> leftBit) & 0x1;

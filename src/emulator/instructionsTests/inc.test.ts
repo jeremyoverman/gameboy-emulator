@@ -44,3 +44,13 @@ test("incrementing a 16bit register", () => {
 
   expect(cpu.registers.get("bc")).toEqual(0x0301);
 });
+
+test("incrementing the sp register", () => {
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
+
+  cpu.registers.set("sp", 0x0300);
+  instructions.inc("sp");
+
+  expect(cpu.registers.get("sp")).toEqual(0x0301);
+});
