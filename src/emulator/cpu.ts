@@ -1,7 +1,7 @@
 import { Emitter } from ".";
 import { Instructions } from "./instructions";
 import { Memory } from "./memory";
-import { OpCodes } from "./opcodes";
+import { OpCodeDefinition, OpCodes } from "./opcodes";
 import { RegisterEventMap, Registers } from "./registers";
 
 export type CPUEventMap = RegisterEventMap;
@@ -23,30 +23,26 @@ export class CPU {
   }
 
   step() {
-    let isPrefix = false;
-    let instructionByte = this.memory.readByte(this.registers.get('pc'));
+    const pc = this.registers.get('pc');
+
+    let instructionByte = this.memory.readByte(pc);
+    let opcode: OpCodeDefinition;
+    let args = new Uint8Array(0);
 
     if (instructionByte === 0xcb) {
-      isPrefix = true;
-      instructionByte = this.memory.readByte(this.registers.get('pc') + 1);
+      instructionByte = this.memory.readByte(pc + 1);
+      opcode = this.opcodes.prefixOpcodes[instructionByte];
+    } else {
+      opcode = this.opcodes.opcodes[instructionByte];
+      args = this.memory.readNext(pc, (opcode?.length || 1) - 1)
     }
-
-    const opcodeTable = isPrefix ? this.opcodes.cb_opcodes : this.opcodes.opcodes;
-    const opcode = opcodeTable[instructionByte];
 
     if (!opcode) {
       throw new Error(`${instructionByte} not implemented!`);
     }
 
-    // Prefix instructions don't have arguments
-    const args = isPrefix ? new Uint8Array(0) : this.memory.readNext(this.registers.get('pc'), opcode.length - 1)
-    const result = opcode.run(this.registers.get('pc'), args);
-
-    if (result !== undefined) {
-      this.registers.set('pc', result);
-    } else {
-      this.registers.set('pc', this.registers.get('pc') + opcode.length);
-    }
+    const result = opcode.run(pc, args);
+    this.registers.set('pc', result != undefined ? result : pc + opcode.length);
   }
 
   halt() {

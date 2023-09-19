@@ -3,16 +3,12 @@ import {CPU} from './cpu'
 
 export const opCodes = {} as const
 
-type OpCodeDefinition = {
+export type OpCodeDefinition = {
   run: (pc: number, args: Uint8Array) => number | void
   name: string
   length: number
   cycles: number | number[]
 } | null
-
-// const range = (start: number, end: number) => {
-//   return Array.from({ length: end - start + 1 }, (_, i) => i + start);
-// };
 
 export class OpCodes {
   private cpu: CPU
@@ -20,16 +16,6 @@ export class OpCodes {
   constructor(cpu: CPU) {
     this.cpu = cpu
   }
-
-  // private getNextBytes(length: number) {
-  //   const bytes = [];
-
-  //   for (let i = 0; i < length; i++) {
-  //     bytes.push(this.cpu.memory.readByte(this.cpu.pc + i));
-  //   }
-
-  //   return bytes;
-  // }
 
   opcodes: Record<number, OpCodeDefinition> = {
     0x00: { name: 'NOP',         length: 1, cycles: 4,        run: () => { this.cpu.instructions.nop(); } },
@@ -290,7 +276,7 @@ export class OpCodes {
     0xff: { name: 'RST 38H',     length: 1, cycles: 16,       run: () => { throw new Error('Not Implemented') } },
   }
 
-  cb_opcodes: Record<number, OpCodeDefinition> = {
+  prefixOpcodes: Record<number, OpCodeDefinition> = {
     0x00: { name: 'RLC B',       length: 2, cycles: 8,        run: () => { this.cpu.instructions.rlc('b') }},
     0x01: { name: 'RLC C',       length: 2, cycles: 8,        run: () => { this.cpu.instructions.rlc('c') }},
     0x02: { name: 'RLC D',       length: 2, cycles: 8,        run: () => { this.cpu.instructions.rlc('d') }},
