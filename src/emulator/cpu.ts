@@ -32,7 +32,13 @@ export class CPU {
       throw new Error(`${instructionByte} not implemented!`);
     }
 
-    this.pc = opcode.run(this.pc);
+    const result = opcode.run(this.pc);
+
+    if (result !== undefined) {
+      this.pc = result;
+    } else {
+      this.pc += opcode.length;
+    }
   }
 
   halt() {
