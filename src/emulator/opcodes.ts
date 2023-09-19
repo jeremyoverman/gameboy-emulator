@@ -535,7 +535,3 @@ export class OpCodes {
     0xff: { name: 'SET 7,A',     length: 2, cycles: 8,        run: () => { this.cpu.instructions.set('a', 7)}},
   }
 }
-
-// const or_opcodes = range(0xb0, 0xb7).map((opcode) => {
-//   return opcode;
-// });
