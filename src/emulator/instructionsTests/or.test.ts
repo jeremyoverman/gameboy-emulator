@@ -45,3 +45,19 @@ test("oring two 16 bit numbers", () => {
   expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
   expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
 });
+
+test("oring hl reference", () => {
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
+
+  cpu.memory.writeByte(0xff00, 0b00000101);
+  cpu.registers.set("a", 0b00000111);
+  cpu.registers.set("hl", 0xff00);
+  instructions.or("hl", true);
+
+  expect(cpu.registers.get("a")).toEqual(0b00000111);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
+});

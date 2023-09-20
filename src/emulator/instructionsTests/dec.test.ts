@@ -44,3 +44,14 @@ test("decrementing a 16bit register", () => {
 
   expect(cpu.registers.get("bc")).toEqual(0x0300);
 });
+
+test("decrementing hl reference", () => {
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
+
+  cpu.memory.writeByte(0xff00, 0x03);
+  cpu.registers.set("hl", 0xff00);
+  instructions.dec("hl", true);
+
+  expect(cpu.memory.readByte(0xff00)).toEqual(0x02);
+});

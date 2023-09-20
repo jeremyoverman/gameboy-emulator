@@ -21,22 +21,13 @@ test("Setting a 1 bit on an 8 bit register", () => {
   expect(cpu.registers.get("b")).toEqual(0b0000_0111);
 });
 
-test("Setting a 0 bit on an 16 bit register", () => {
+test("Setting a 0 bit on hl reference", () => {
   const cpu = new CPU(() => {});
   const instructions = new Instructions(cpu);
 
-  cpu.registers.set("bc", 0b0000_0111_0000_0000);
-  instructions.set("bc", 11);
+  cpu.memory.writeByte(0xff00, 0b0000_0111);
+  cpu.registers.set("hl", 0xff00);
+  instructions.set("hl", 3);
 
-  expect(cpu.registers.get("bc")).toEqual(0b0000_1111_0000_0000);
-});
-
-test("Setting a 1 bit on an 8 bit register", () => {
-  const cpu = new CPU(() => {});
-  const instructions = new Instructions(cpu);
-
-  cpu.registers.set("bc", 0b0000_0111_0000_0000);
-  instructions.set("bc", 10);
-
-  expect(cpu.registers.get("bc")).toEqual(0b0000_0111_0000_0000);
+  expect(cpu.memory.readByte(0xff00)).toEqual(0b0000_1111);
 });

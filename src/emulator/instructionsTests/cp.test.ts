@@ -105,3 +105,19 @@ test("a 16bit carry should be set if the result carries", () => {
   expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(true);
   expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(true);
 });
+
+test("comparing hl reference", () => {
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
+
+  cpu.memory.writeByte(0xff00, 0x02);
+  cpu.registers.set("a", 0x03);
+  cpu.registers.set("hl", 0xff00);
+  instructions.cp("hl", true);
+
+  expect(cpu.registers.get("a")).toEqual(0x03);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(true);
+});

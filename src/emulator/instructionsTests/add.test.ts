@@ -120,3 +120,47 @@ test("adding with HL with half carry", () => {
   expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(true);
   expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
 });
+
+test("adding the reference HL with A", () => {
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
+
+  cpu.memory.writeByte(0x00ff, 0x01)
+  cpu.registers.set("hl", 0x00ff);
+  cpu.registers.set("a", 0x02);
+  instructions.add("hl", false, true);
+
+  expect(cpu.registers.get("a")).toEqual(0x03);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
+});
+
+test("adding sp with n", () => {
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
+
+  cpu.registers.set("sp", 0x0005);
+  instructions.add_sp(0x02);
+
+  expect(cpu.registers.get("sp")).toEqual(0x0007);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
+})
+
+test("adding sp with negative n", () => {
+  const cpu = new CPU(() => {});
+  const instructions = new Instructions(cpu);
+
+  cpu.registers.set("sp", 0x0005);
+  instructions.add_sp(0b11111110);
+
+  expect(cpu.registers.get("sp")).toEqual(0x03);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
+  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(true);
+  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
+})

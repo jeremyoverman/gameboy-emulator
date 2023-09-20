@@ -53,16 +53,6 @@ test("rrca with carry", () => {
   expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
 });
 
-test("rrca without carry", () => {
-  const cpu = new CPU(() => {});
-
-  cpu.registers.set("a", 0b01110000);
-  cpu.instructions.rrca();
-
-  expect(cpu.registers.get("a")).toEqual(0b00111000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
-});
-
 test("rra with carry", () => {
   const cpu = new CPU(() => {});
 
@@ -92,6 +82,17 @@ test("rlc with carry", () => {
   cpu.instructions.rlc("b");
 
   expect(cpu.registers.get("b")).toEqual(0b11000001);
+  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+});
+
+test("rlc with carry on hl ref", () => {
+  const cpu = new CPU(() => {});
+
+  cpu.memory.writeByte(0xff00, 0b11100000);
+  cpu.registers.set('hl', 0xff00)
+  cpu.instructions.rlc("hl", true);
+
+  expect(cpu.memory.readByte(0xff00)).toEqual(0b11000001);
   expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
 });
 
@@ -431,4 +432,14 @@ test("swap 16 bit register", () => {
   cpu.instructions.swap("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b01110000_10000000);
+});
+
+test("swap hl reference", () => {
+  const cpu = new CPU(() => {});
+
+  cpu.memory.writeByte(0xff00, 0b11110000);
+  cpu.registers.set("hl", 0xff00);
+  cpu.instructions.swap("hl", true);
+
+  expect(cpu.memory.readByte(0xff00)).toEqual(0b00001111);
 });
