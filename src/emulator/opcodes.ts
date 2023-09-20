@@ -30,10 +30,6 @@ export class OpCodes {
     this.cpu = cpu
   }
 
-  private swapUint8Array(bytes: Uint8Array) {
-    return new Uint8Array([bytes[1], bytes[0]]);
-  }
-
   private uInt8ArrayToNumber(bytes: Uint8Array) {
     return bytes[0] | (bytes[1] << 8)
   }
@@ -42,8 +38,7 @@ export class OpCodes {
     let address: number;
 
     if (args) {
-      const swappedArray = this.swapUint8Array(args);
-      address = this.uInt8ArrayToNumber(swappedArray);
+      address = this.uInt8ArrayToNumber(args);
     } else {
       address = this.cpu.registers.get('hl')
     }
