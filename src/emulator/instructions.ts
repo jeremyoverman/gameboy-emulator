@@ -1,56 +1,51 @@
-import { CPU } from "./cpu";
+import { CPU } from './cpu'
 import {
   ArithmeticRegisterName,
   Flag,
   RegisterName,
   CommonSixteenBitRegisterName,
   CommonEightBitRegisterName,
-} from "./registers";
+} from './registers'
 
 type ArithmeticReturn = {
-  value: number;
-  carry: boolean;
-  halfCarry: boolean;
-  zero: boolean;
-  subtraction: boolean;
-};
-
-export enum JumpMode {
-  nz, z, nc, c
+  value: number
+  carry: boolean
+  halfCarry: boolean
+  zero: boolean
+  subtraction: boolean
 }
 
-type LoadByteTarget = CommonEightBitRegisterName | 'hli';
-type LoadByteSource = LoadByteTarget | 'd8';
+export type LoadByteTarget = CommonEightBitRegisterName | CommonSixteenBitRegisterName | 'sp'
+export type LoadByteSource = LoadByteTarget | 'd8' | 'd16'
+
+export enum JumpMode {
+  nz,
+  z,
+  nc,
+  c,
+}
 
 export class Instructions {
-  private cpu: CPU;
+  private cpu: CPU
 
   constructor(cpu: CPU) {
-    this.cpu = cpu;
+    this.cpu = cpu
   }
 
-  private _setWithFlags(
-    reg: ArithmeticRegisterName | null,
-    ret: ArithmeticReturn
-  ) {
-    this.cpu.registers.setFlag(Flag.Carry, ret.carry);
-    this.cpu.registers.setFlag(Flag.Zero, ret.zero);
-    this.cpu.registers.setFlag(Flag.Subtraction, ret.subtraction);
-    this.cpu.registers.setFlag(Flag.HalfCarry, ret.halfCarry);
+  private _setWithFlags(reg: ArithmeticRegisterName | null, ret: ArithmeticReturn) {
+    this.cpu.registers.setFlag(Flag.Carry, ret.carry)
+    this.cpu.registers.setFlag(Flag.Zero, ret.zero)
+    this.cpu.registers.setFlag(Flag.Subtraction, ret.subtraction)
+    this.cpu.registers.setFlag(Flag.HalfCarry, ret.halfCarry)
 
     if (reg) {
-      this.cpu.registers.set(reg, ret.value);
+      this.cpu.registers.set(reg, ret.value)
     }
   }
 
-  private _add(
-    num1: number,
-    num2: number,
-    withCarry?: boolean,
-    sixteenBit?: boolean
-  ) {
-    const maxFull = sixteenBit ? 0xffff : 0xff;
-    const maxHalf = sixteenBit ? 0xff : 0xf;
+  private _add(num1: number, num2: number, withCarry?: boolean, sixteenBit?: boolean) {
+    const maxFull = sixteenBit ? 0xffff : 0xff
+    const maxHalf = sixteenBit ? 0xff : 0xf
 
     const ret: ArithmeticReturn = {
       value: num1 + num2,
@@ -58,32 +53,27 @@ export class Instructions {
       halfCarry: false,
       zero: false,
       subtraction: false,
-    };
+    }
 
     if (withCarry && this.cpu.registers.getFlag(Flag.Carry)) {
-      ret.value += 1;
+      ret.value += 1
     }
 
     if (ret.value > maxFull) {
       // Handle overflow
-      ret.value = ret.value & maxFull;
-      ret.carry = true;
+      ret.value = ret.value & maxFull
+      ret.carry = true
     }
 
-    ret.zero = ret.value === 0;
-    ret.halfCarry = (num1 & maxHalf) + (num2 & maxHalf) > maxHalf;
+    ret.zero = ret.value === 0
+    ret.halfCarry = (num1 & maxHalf) + (num2 & maxHalf) > maxHalf
 
-    return ret;
+    return ret
   }
 
-  private _subtract(
-    num1: number,
-    num2: number,
-    withCarry?: boolean,
-    sixteenBit?: boolean
-  ) {
-    const minFull = sixteenBit ? 0xffff : 0xff;
-    const minHalf = sixteenBit ? 0xff : 0xf;
+  private _subtract(num1: number, num2: number, withCarry?: boolean, sixteenBit?: boolean) {
+    const minFull = sixteenBit ? 0xffff : 0xff
+    const minHalf = sixteenBit ? 0xff : 0xf
 
     const ret: ArithmeticReturn = {
       value: num1 - num2,
@@ -91,34 +81,34 @@ export class Instructions {
       halfCarry: false,
       zero: false,
       subtraction: true,
-    };
+    }
 
     if (withCarry && this.cpu.registers.getFlag(Flag.Carry)) {
-      ret.value -= 1;
+      ret.value -= 1
     }
 
     if (ret.value < 0) {
       // Handle overflow
-      ret.value = ret.value & minFull;
-      ret.carry = true;
+      ret.value = ret.value & minFull
+      ret.carry = true
     }
 
-    ret.zero = ret.value === 0;
-    ret.halfCarry = (num1 & minHalf) - (num2 & minHalf) < 0;
+    ret.zero = ret.value === 0
+    ret.halfCarry = (num1 & minHalf) - (num2 & minHalf) < 0
 
-    return ret;
+    return ret
   }
 
   private _getValue(source: ArithmeticRegisterName | number) {
-    return typeof source === "number" ? source : this.cpu.registers.get(source);
+    return typeof source === 'number' ? source : this.cpu.registers.get(source)
   }
 
   private _is16bit(source: ArithmeticRegisterName | number) {
-    if (typeof source === "number") {
-      return false;
+    if (typeof source === 'number') {
+      return false
     }
 
-    return this.cpu.registers.is16Bit(source as CommonSixteenBitRegisterName);
+    return this.cpu.registers.is16Bit(source as CommonSixteenBitRegisterName)
   }
 
   private _convertTwosComplement(value: number) {
@@ -126,342 +116,300 @@ export class Instructions {
     if (value & 0x80) {
       // If MSB is set, it's a negative value
       // Perform two's complement to convert to signed int
-      return -((~value & 0xFF) + 1);
+      return -((~value & 0xff) + 1)
     } else {
       // If MSB is not set, it's a positive value
-      return value;
+      return value
     }
   }
 
   _rotate(
     reg: RegisterName,
-    direction: "left" | "right",
+    direction: 'left' | 'right',
     throughCarry?: boolean,
     shift?: boolean,
     preserveMsb?: boolean
   ) {
-    const is16Bit = this.cpu.registers.is16Bit(reg as CommonSixteenBitRegisterName);
-    const value = this.cpu.registers.get(reg);
-    const leftBit = is16Bit ? 15 : 7;
-    const msb = (value >> leftBit) & 0x1;
+    const is16Bit = this.cpu.registers.is16Bit(reg as CommonSixteenBitRegisterName)
+    const value = this.cpu.registers.get(reg)
+    const leftBit = is16Bit ? 15 : 7
+    const msb = (value >> leftBit) & 0x1
 
     // Get the bit that will be shifted out
-    const bit = direction === "left" ? leftBit : 0;
-    const bitValue = (value >> bit) & 0x1;
+    const bit = direction === 'left' ? leftBit : 0
+    const bitValue = (value >> bit) & 0x1
 
     // Shift the value
-    let result = direction === "left" ? value << 1 : value >> 1;
+    let result = direction === 'left' ? value << 1 : value >> 1
 
-    result = result & (is16Bit ? 0xffff : 0xff);
+    result = result & (is16Bit ? 0xffff : 0xff)
 
     if (!shift) {
-      result = result | (bitValue << (direction === "left" ? 0 : leftBit));
+      result = result | (bitValue << (direction === 'left' ? 0 : leftBit))
     }
 
     if (preserveMsb) {
-      result = result | (msb << leftBit);
+      result = result | (msb << leftBit)
     }
 
     if (throughCarry) {
       // Set the bit that was shifted out to the carry flag
       if (this.cpu.registers.getFlag(Flag.Carry)) {
-        const sigMask = is16Bit ? 0x8000 : 0x80;
-        result = result | (direction === "left" ? 0x1 : sigMask);
+        const sigMask = is16Bit ? 0x8000 : 0x80
+        result = result | (direction === 'left' ? 0x1 : sigMask)
       }
     }
 
-    this.cpu.registers.set(reg, result);
-    this.cpu.registers.setFlag(Flag.Carry, bitValue === 1);
-    this.cpu.registers.setFlag(Flag.Subtraction, false);
-    this.cpu.registers.setFlag(Flag.HalfCarry, false);
-    this.cpu.registers.setFlag(Flag.Zero, result === 0);
+    this.cpu.registers.set(reg, result)
+    this.cpu.registers.setFlag(Flag.Carry, bitValue === 1)
+    this.cpu.registers.setFlag(Flag.Subtraction, false)
+    this.cpu.registers.setFlag(Flag.HalfCarry, false)
+    this.cpu.registers.setFlag(Flag.Zero, result === 0)
   }
 
   nop() {}
 
   halt() {
-    this.cpu.halt();
+    this.cpu.halt()
   }
 
   stop() {
-    this.cpu.stop();
+    this.cpu.stop()
   }
 
   bit(source: ArithmeticRegisterName, bit: number) {
-    const value = this.cpu.registers.get(source);
-    const bitValue = (value >> bit) & 0x1;
+    const value = this.cpu.registers.get(source)
+    const bitValue = (value >> bit) & 0x1
 
-    this.cpu.registers.setFlag(Flag.Zero, bitValue === 0);
-    this.cpu.registers.setFlag(Flag.Subtraction, false);
-    this.cpu.registers.setFlag(Flag.HalfCarry, true);
+    this.cpu.registers.setFlag(Flag.Zero, bitValue === 0)
+    this.cpu.registers.setFlag(Flag.Subtraction, false)
+    this.cpu.registers.setFlag(Flag.HalfCarry, true)
   }
 
   set(source: ArithmeticRegisterName, bit: number) {
-    const value = this.cpu.registers.get(source);
+    const value = this.cpu.registers.get(source)
 
-    this.cpu.registers.set(source, value | (0x1 << bit));
+    this.cpu.registers.set(source, value | (0x1 << bit))
   }
 
   reset(source: ArithmeticRegisterName, bit: number) {
-    const value = this.cpu.registers.get(source);
+    const value = this.cpu.registers.get(source)
 
-    this.cpu.registers.set(source, value & ~(0x1 << bit));
+    this.cpu.registers.set(source, value & ~(0x1 << bit))
   }
 
   add(source: ArithmeticRegisterName | number, withCarry?: boolean) {
-    const sixteenBit = this._is16bit(source);
-    const value = this._getValue(source);
+    const sixteenBit = this._is16bit(source)
+    const value = this._getValue(source)
 
     if (sixteenBit) {
-      const result = this._add(
-        this.cpu.registers.get("hl"),
-        value,
-        withCarry,
-        true
-      );
+      const result = this._add(this.cpu.registers.get('hl'), value, withCarry, true)
 
-      this._setWithFlags("hl", result);
+      this._setWithFlags('hl', result)
     } else {
-      const result = this._add(this.cpu.registers.get("a"), value, withCarry);
-      this._setWithFlags("a", result);
+      const result = this._add(this.cpu.registers.get('a'), value, withCarry)
+      this._setWithFlags('a', result)
     }
   }
 
   adc(source: ArithmeticRegisterName | number) {
-    this.add(source, true);
+    this.add(source, true)
   }
 
   sub(source: ArithmeticRegisterName | number, withCarry?: boolean) {
-    const sixteenBit = this._is16bit(source);
-    const value = this._getValue(source);
+    const sixteenBit = this._is16bit(source)
+    const value = this._getValue(source)
 
     if (sixteenBit) {
-      const result = this._subtract(
-        this.cpu.registers.get("hl"),
-        value,
-        withCarry,
-        true
-      );
+      const result = this._subtract(this.cpu.registers.get('hl'), value, withCarry, true)
 
-      this._setWithFlags("hl", result);
+      this._setWithFlags('hl', result)
     } else {
-      const result = this._subtract(
-        this.cpu.registers.get("a"),
-        value,
-        withCarry
-      );
-      this._setWithFlags("a", result);
+      const result = this._subtract(this.cpu.registers.get('a'), value, withCarry)
+      this._setWithFlags('a', result)
     }
   }
 
   sbc(source: ArithmeticRegisterName | number) {
-    this.sub(source, true);
+    this.sub(source, true)
   }
 
   and(source: ArithmeticRegisterName | number) {
-    const reg = this._is16bit(source) ? "hl" : "a";
-    const value = this._getValue(source);
-    this.cpu.registers.set(reg, this.cpu.registers.get(reg) & value);
+    const reg = this._is16bit(source) ? 'hl' : 'a'
+    const value = this._getValue(source)
+    this.cpu.registers.set(reg, this.cpu.registers.get(reg) & value)
   }
 
   xor(source: ArithmeticRegisterName | number) {
-    const reg = this._is16bit(source) ? "hl" : "a";
-    const value = this._getValue(source);
-    this.cpu.registers.set(reg, this.cpu.registers.get(reg) ^ value);
+    const reg = this._is16bit(source) ? 'hl' : 'a'
+    const value = this._getValue(source)
+    this.cpu.registers.set(reg, this.cpu.registers.get(reg) ^ value)
   }
 
   or(source: ArithmeticRegisterName | number) {
-    const reg = this._is16bit(source) ? "hl" : "a";
-    const value = this._getValue(source);
-    this.cpu.registers.set(reg, this.cpu.registers.get(reg) | value);
+    const reg = this._is16bit(source) ? 'hl' : 'a'
+    const value = this._getValue(source)
+    this.cpu.registers.set(reg, this.cpu.registers.get(reg) | value)
   }
 
   cp(source: ArithmeticRegisterName | number) {
-    const sixteenBit = this._is16bit(source);
-    const value = this._getValue(source);
-    const result = this._subtract(
-      this.cpu.registers.get(sixteenBit ? "hl" : "a"),
-      value,
-      false,
-      sixteenBit
-    );
+    const sixteenBit = this._is16bit(source)
+    const value = this._getValue(source)
+    const result = this._subtract(this.cpu.registers.get(sixteenBit ? 'hl' : 'a'), value, false, sixteenBit)
 
-    this._setWithFlags(null, result);
+    this._setWithFlags(null, result)
   }
 
   inc(source: ArithmeticRegisterName) {
-    const result = this._add(
-      this.cpu.registers.get(source),
-      1,
-      false,
-      this._is16bit(source)
-    );
-    this._setWithFlags(source, result);
+    const result = this._add(this.cpu.registers.get(source), 1, false, this._is16bit(source))
+    this._setWithFlags(source, result)
   }
 
   dec(source: ArithmeticRegisterName) {
-    const result = this._subtract(
-      this.cpu.registers.get(source),
-      1,
-      false,
-      this._is16bit(source)
-    );
+    const result = this._subtract(this.cpu.registers.get(source), 1, false, this._is16bit(source))
 
-    this._setWithFlags(source, result);
+    this._setWithFlags(source, result)
   }
 
   cpl() {
-    this.cpu.registers.set("a", this.cpu.registers.get("a") ^ 0xff);
-    this.cpu.registers.setFlag(Flag.Subtraction, true);
-    this.cpu.registers.setFlag(Flag.HalfCarry, true);
+    this.cpu.registers.set('a', this.cpu.registers.get('a') ^ 0xff)
+    this.cpu.registers.setFlag(Flag.Subtraction, true)
+    this.cpu.registers.setFlag(Flag.HalfCarry, true)
   }
 
   daa() {
     // note: assumes a is a uint8_t and wraps from 0xff to 0
-    let newValue = this.cpu.registers.get("a");
+    let newValue = this.cpu.registers.get('a')
 
     if (!this.cpu.registers.getFlag(Flag.Subtraction)) {
       // after an addition, adjust if (half-)carry occurred or if result is out of bounds
       if (this.cpu.registers.getFlag(Flag.Carry) || newValue > 0x99) {
-        newValue += 0x60;
-        this.cpu.registers.setFlag(Flag.Carry, true);
+        newValue += 0x60
+        this.cpu.registers.setFlag(Flag.Carry, true)
       }
 
-      if (
-        this.cpu.registers.getFlag(Flag.HalfCarry) ||
-        (newValue & 0x0f) > 0x09
-      ) {
-        newValue += 0x6;
+      if (this.cpu.registers.getFlag(Flag.HalfCarry) || (newValue & 0x0f) > 0x09) {
+        newValue += 0x6
       }
     } else {
       // after a subtraction, only adjust if (half-)carry occurred
       if (this.cpu.registers.getFlag(Flag.Carry)) {
-        newValue -= 0x60;
+        newValue -= 0x60
       }
       if (this.cpu.registers.getFlag(Flag.HalfCarry)) {
-        newValue -= 0x6;
+        newValue -= 0x6
       }
     }
 
-    this.cpu.registers.setFlag(Flag.Zero, newValue == 0);
-    this.cpu.registers.setFlag(Flag.HalfCarry, false);
-    this.cpu.registers.set("a", newValue);
+    this.cpu.registers.setFlag(Flag.Zero, newValue == 0)
+    this.cpu.registers.setFlag(Flag.HalfCarry, false)
+    this.cpu.registers.set('a', newValue)
   }
 
   rlca() {
-    this._rotate("a", "left");
+    this._rotate('a', 'left')
   }
 
   rla() {
-    this._rotate("a", "left", true);
+    this._rotate('a', 'left', true)
   }
 
   rrca() {
-    this._rotate("a", "right");
+    this._rotate('a', 'right')
   }
 
   rra() {
-    this._rotate("a", "right", true);
+    this._rotate('a', 'right', true)
   }
 
   rlc(reg: RegisterName) {
-    this._rotate(reg, "left");
+    this._rotate(reg, 'left')
   }
 
   rl(reg: RegisterName) {
-    this._rotate(reg, "left", true);
+    this._rotate(reg, 'left', true)
   }
 
   rrc(reg: RegisterName) {
-    this._rotate(reg, "right");
+    this._rotate(reg, 'right')
   }
 
   rr(reg: RegisterName) {
-    this._rotate(reg, "right", true);
+    this._rotate(reg, 'right', true)
   }
 
   sla(reg: RegisterName) {
-    this._rotate(reg, "left", false, true);
+    this._rotate(reg, 'left', false, true)
   }
 
   sra(reg: RegisterName) {
-    this._rotate(reg, "right", false, true, true);
+    this._rotate(reg, 'right', false, true, true)
   }
 
   srl(reg: RegisterName) {
-    this._rotate(reg, "right", false, true);
+    this._rotate(reg, 'right', false, true)
   }
 
   swap(reg: RegisterName) {
-    const value = this.cpu.registers.get(reg);
+    const value = this.cpu.registers.get(reg)
 
-    const shift = this.cpu.registers.is16Bit(reg) ? 8 : 4;
-    const lowerMask = this.cpu.registers.is16Bit(reg) ? 0xff : 0xf;
+    const shift = this.cpu.registers.is16Bit(reg) ? 8 : 4
+    const lowerMask = this.cpu.registers.is16Bit(reg) ? 0xff : 0xf
 
-    const low = value & lowerMask;
-    const high = (value >> shift) & lowerMask;
-    const result = (low << shift) | high;
+    const low = value & lowerMask
+    const high = (value >> shift) & lowerMask
+    const result = (low << shift) | high
 
-    this.cpu.registers.set(reg, result);
-    this.cpu.registers.setFlag(Flag.Carry, false);
-    this.cpu.registers.setFlag(Flag.Subtraction, false);
-    this.cpu.registers.setFlag(Flag.HalfCarry, false);
-    this.cpu.registers.setFlag(Flag.Zero, result === 0);
+    this.cpu.registers.set(reg, result)
+    this.cpu.registers.setFlag(Flag.Carry, false)
+    this.cpu.registers.setFlag(Flag.Subtraction, false)
+    this.cpu.registers.setFlag(Flag.HalfCarry, false)
+    this.cpu.registers.setFlag(Flag.Zero, result === 0)
   }
 
   jp(value: number, mode?: JumpMode | null, relative?: boolean) {
-    let address = value;
+    let address = value
 
     if (relative) {
-      const pc = this.cpu.registers.get("pc");
-      address = pc + this._convertTwosComplement(value);
+      const pc = this.cpu.registers.get('pc')
+      address = pc + this._convertTwosComplement(value)
     }
 
     if (mode === JumpMode.nz) {
       if (!this.cpu.registers.getFlag(Flag.Zero)) {
-        this.cpu.registers.set("pc", address);
-        return true;
+        this.cpu.registers.set('pc', address)
+        return true
       }
     } else if (mode === JumpMode.z) {
       if (this.cpu.registers.getFlag(Flag.Zero)) {
-        this.cpu.registers.set("pc", address);
-        return true;
+        this.cpu.registers.set('pc', address)
+        return true
       }
     } else if (mode === JumpMode.nc) {
       if (!this.cpu.registers.getFlag(Flag.Carry)) {
-        this.cpu.registers.set("pc", address);
-        return true;
+        this.cpu.registers.set('pc', address)
+        return true
       }
     } else if (mode === JumpMode.c) {
       if (this.cpu.registers.getFlag(Flag.Carry)) {
-        this.cpu.registers.set("pc", address);
-        return true;
+        this.cpu.registers.set('pc', address)
+        return true
       }
     } else {
-      this.cpu.registers.set("pc", address);
-      return true;
+      this.cpu.registers.set('pc', address)
+      return true
     }
 
-    return false;
+    return false
   }
 
-  load(source: LoadByteSource, dest: LoadByteTarget) {
-    let value = 0;
+  load(value: Uint8Array, dest: LoadByteTarget | number, reference?: boolean) {
+    if (typeof dest === 'number' || reference) {
+      const destValue = this._getValue(dest)
 
-    if (source === 'hli') {
-      const hl = this.cpu.registers.get("hl");
-      value = this.cpu.memory.readByte(hl);
-    } else if (source === 'd8') {
-      value = this.cpu.memory.readByte(this.cpu.registers.get("pc") + 1);
+      this.cpu.memory.writeBytes(destValue, Array.from(value))
     } else {
-      value = this.cpu.registers.get(source);
-    }
-
-    if (dest == 'hli') {
-      const hl = this.cpu.registers.get("hl");
-      this.cpu.memory.writeByte(hl, value);
-    } else {
-      this.cpu.registers.set(dest, value);
+      this.cpu.registers.setUint8Array(dest, value)
     }
   }
 }

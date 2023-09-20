@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {CPU} from './cpu'
-import { JumpMode } from './instructions'
+import { JumpMode, LoadByteSource, LoadByteTarget } from './instructions'
+import { RegisterName } from './registers'
 
 export const opCodes = {} as const
 
@@ -11,6 +12,17 @@ export type OpCodeDefinition = {
   cycles: number | number[]
 } | null
 
+interface LoadOptions {
+  refTarget?: boolean
+  target: LoadByteTarget | 'd16'
+
+  refSource?: boolean
+  source: LoadByteSource
+
+  incHl?: boolean
+  decHl?: boolean
+}
+
 export class OpCodes {
   private cpu: CPU
 
@@ -18,15 +30,20 @@ export class OpCodes {
     this.cpu = cpu
   }
 
-  private bytesToU16(bytes: Uint8Array) {
-    return (bytes[1] << 8) | bytes[0]
+  private swapUint8Array(bytes: Uint8Array) {
+    return new Uint8Array([bytes[1], bytes[0]]);
+  }
+
+  private uInt8ArrayToNumber(bytes: Uint8Array) {
+    return bytes[0] | (bytes[1] << 8)
   }
 
   private jump(args?: Uint8Array, mode?: JumpMode | null, relative?: boolean) {
     let address: number;
 
     if (args) {
-      address = this.bytesToU16(args);
+      const swappedArray = this.swapUint8Array(args);
+      address = this.uInt8ArrayToNumber(swappedArray);
     } else {
       address = this.cpu.registers.get('hl')
     }
@@ -38,139 +55,168 @@ export class OpCodes {
     }
   }
 
+  private load(args: Uint8Array, opts: LoadOptions) {
+    let bytes: Uint8Array;
+    let target: LoadByteTarget | number;
+
+    if (opts.source === 'd8' || opts.source === 'd16') {
+      bytes = args;
+    } else {
+      bytes = this.cpu.registers.getUint8Array(opts.source as RegisterName)
+    }
+
+    if (opts.refSource) {
+      bytes = this.cpu.memory.readBytes(this.uInt8ArrayToNumber(bytes), 1)
+    }
+
+    if (opts.target === 'd16') {
+      target = this.uInt8ArrayToNumber(args);
+    } else {
+      target = opts.target
+    }
+
+    this.cpu.instructions.load(bytes, target, opts.refTarget);
+
+    if (opts.incHl) {
+      this.cpu.instructions.inc('hl')
+    } else if (opts.decHl) {
+      this.cpu.instructions.dec('hl')
+    }
+  }
+
   private notImplemented() {
     throw new Error('Not Implemented')
   }
 
   opcodes: Record<number, OpCodeDefinition> = {
     0x00: { name: 'NOP',         length: 1, cycles: 4,        run: () => this.cpu.instructions.nop() },
-    0x01: { name: 'LD BC,d16',   length: 3, cycles: 12,       run: () => this.notImplemented() },
-    0x02: { name: 'LD (BC),A',   length: 1, cycles: 8,        run: () => this.notImplemented() },
+    0x01: { name: 'LD BC,d16',   length: 3, cycles: 12,       run: (_pc, bytes) => this.load(bytes, { target: 'bc', source: 'd16' }) },
+    0x02: { name: 'LD (BC),A',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'bc', refTarget: true, source: 'a' }) },
     0x03: { name: 'INC BC',      length: 1, cycles: 8,        run: () => this.cpu.instructions.inc('bc') },
     0x04: { name: 'INC B',       length: 1, cycles: 4,        run: () => this.cpu.instructions.inc('b') },
     0x05: { name: 'DEC B',       length: 1, cycles: 4,        run: () => this.cpu.instructions.dec('b') },
-    0x06: { name: 'LD B,d8',     length: 2, cycles: 8,        run: () => this.notImplemented() },
+    0x06: { name: 'LD B,d8',     length: 2, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'b', source: 'd8' }) },
     0x07: { name: 'RLCA',        length: 1, cycles: 4,        run: () => this.cpu.instructions.rlca() },
-    0x08: { name: 'LD (a16),SP', length: 3, cycles: 20,       run: () => this.notImplemented() },
+    0x08: { name: 'LD (a16),SP', length: 3, cycles: 20,       run: (_pc, bytes) => this.load(bytes, { target: 'd16', source: 'sp' }) },
     0x09: { name: 'ADD HL,BC',   length: 1, cycles: 8,        run: () => this.cpu.instructions.add('bc') },
-    0x0a: { name: 'LD A,(BC)',   length: 1, cycles: 8,        run: () => this.notImplemented() },
+    0x0a: { name: 'LD A,(BC)',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'a', refSource: true, source: 'bc' }) },
     0x0b: { name: 'DEC BC',      length: 1, cycles: 8,        run: () => this.cpu.instructions.dec('bc') },
     0x0c: { name: 'INC C',       length: 1, cycles: 4,        run: () => this.cpu.instructions.inc('c') },
     0x0d: { name: 'DEC C',       length: 1, cycles: 4,        run: () => this.cpu.instructions.dec('c') },
-    0x0e: { name: 'LD C,d8',     length: 2, cycles: 8,        run: () => this.notImplemented() },
+    0x0e: { name: 'LD C,d8',     length: 2, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'c', source: 'd8' }) },
     0x0f: { name: 'RRCA',        length: 1, cycles: 4,        run: () => this.cpu.instructions.rrca() },
     0x10: { name: 'STOP 0',      length: 2, cycles: 4,        run: () => this.cpu.instructions.stop() },
-    0x11: { name: 'LD DE,d16',   length: 3, cycles: 12,       run: () => this.notImplemented() },
-    0x12: { name: 'LD (DE),A',   length: 1, cycles: 8,        run: () => this.notImplemented() },
+    0x11: { name: 'LD DE,d16',   length: 3, cycles: 12,       run: (_pc, bytes) => this.load(bytes, { target: 'de', source: 'd16' }) },
+    0x12: { name: 'LD (DE),A',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { refTarget: true, target: 'de', source: 'a'}) },
     0x13: { name: 'INC DE',      length: 1, cycles: 8,        run: () => this.cpu.instructions.inc('de') },
     0x14: { name: 'INC D',       length: 1, cycles: 4,        run: () => this.cpu.instructions.inc('d') },
     0x15: { name: 'DEC D',       length: 1, cycles: 4,        run: () => this.cpu.instructions.dec('d') },
-    0x16: { name: 'LD D,d8',     length: 2, cycles: 8,        run: () => this.notImplemented() },
+    0x16: { name: 'LD D,d8',     length: 2, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'd', source: 'd8' }) },
     0x17: { name: 'RLA',         length: 1, cycles: 4,        run: () => this.cpu.instructions.rla() },
     0x18: { name: 'JR r8',       length: 2, cycles: 12,       run: (_pc, byte) => this.jump(byte, null, true) },
     0x19: { name: 'ADD HL,DE',   length: 1, cycles: 8,        run: () => this.cpu.instructions.add('de') },
-    0x1a: { name: 'LD A,(DE)',   length: 1, cycles: 8,        run: () => this.notImplemented() },
+    0x1a: { name: 'LD A,(DE)',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'a', refSource: true, source: 'de' }) },
     0x1b: { name: 'DEC DE',      length: 1, cycles: 8,        run: () => this.cpu.instructions.dec('de') },
     0x1c: { name: 'INC E',       length: 1, cycles: 4,        run: () => this.cpu.instructions.inc('e') },
     0x1d: { name: 'DEC E',       length: 1, cycles: 4,        run: () => this.cpu.instructions.dec('e') },
-    0x1e: { name: 'LD E,d8',     length: 2, cycles: 8,        run: () => this.notImplemented() },
+    0x1e: { name: 'LD E,d8',     length: 2, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'e', source: 'd8' }) },
     0x1f: { name: 'RRA',         length: 1, cycles: 4,        run: () => this.cpu.instructions.rra() },
     0x20: { name: 'JR NZ,r8',    length: 2, cycles: [12, 8],  run: (_pc, byte) => this.jump(byte, JumpMode.nz, true) },
-    0x21: { name: 'LD HL,d16',   length: 3, cycles: 12,       run: () => this.notImplemented() },
-    0x22: { name: 'LD (HL+),A',  length: 1, cycles: 8,        run: () => this.notImplemented() },
+    0x21: { name: 'LD HL,d16',   length: 3, cycles: 12,       run: (_pc, bytes) => this.load(bytes, { target: 'hl', source: 'd16' }) },
+    0x22: { name: 'LD (HL+),A',  length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { refTarget: true, target: 'hl', source: 'a', incHl: true }) },
     0x23: { name: 'INC HL',      length: 1, cycles: 8,        run: () => this.cpu.instructions.inc('hl') },
     0x24: { name: 'INC H',       length: 1, cycles: 4,        run: () => this.cpu.instructions.inc('h') },
     0x25: { name: 'DEC H',       length: 1, cycles: 4,        run: () => this.cpu.instructions.dec('h') },
-    0x26: { name: 'LD H,d8',     length: 2, cycles: 8,        run: () => this.notImplemented() },
+    0x26: { name: 'LD H,d8',     length: 2, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'h', source: 'd8' }) },
     0x27: { name: 'DAA',         length: 1, cycles: 4,        run: () => this.cpu.instructions.daa() },
     0x28: { name: 'JR Z,r8',     length: 2, cycles: [12, 8],  run: (_pc, byte) => this.jump(byte, JumpMode.z, true) },
     0x29: { name: 'ADD HL,HL',   length: 1, cycles: 8,        run: () => this.cpu.instructions.add('hl') },
-    0x2a: { name: 'LD A,(HL+)',  length: 1, cycles: 8,        run: () => this.notImplemented() },
+    0x2a: { name: 'LD A,(HL+)',  length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'a', refSource: true, source: 'hl', incHl: true }) },
     0x2b: { name: 'DEC HL',      length: 1, cycles: 8,        run: () => this.cpu.instructions.dec('hl') },
     0x2c: { name: 'INC L',       length: 1, cycles: 4,        run: () => this.cpu.instructions.inc('l') },
     0x2d: { name: 'DEC L',       length: 1, cycles: 4,        run: () => this.cpu.instructions.dec('l') },
-    0x2e: { name: 'LD L,d8',     length: 2, cycles: 8,        run: () => this.notImplemented() },
+    0x2e: { name: 'LD L,d8',     length: 2, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'l', source: 'd8' }) },
     0x2f: { name: 'CPL',         length: 1, cycles: 4,        run: () => this.cpu.instructions.cpl() },
     0x30: { name: 'JR NC,r8',    length: 2, cycles: [12, 8],  run: (_pc, byte) => this.jump(byte, JumpMode.nc, true) },
-    0x31: { name: 'LD SP,d16',   length: 3, cycles: 12,       run: () => this.notImplemented() },
-    0x32: { name: 'LD (HL-),A',  length: 1, cycles: 8,        run: () => this.notImplemented() },
+    0x31: { name: 'LD SP,d16',   length: 3, cycles: 12,       run: (_pc, bytes) => this.load(bytes, { target: 'sp', source: 'd16' }) },
+    0x32: { name: 'LD (HL-),A',  length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { source: 'a', refTarget: true, target: 'hl', decHl: true }) },
     0x33: { name: 'INC SP',      length: 1, cycles: 8,        run: () => this.cpu.instructions.inc('sp') },
     0x34: { name: 'INC (HL)',    length: 1, cycles: 12,       run: () => this.notImplemented() },
     0x35: { name: 'DEC (HL)',    length: 1, cycles: 12,       run: () => this.notImplemented() },
-    0x36: { name: 'LD (HL),d8',  length: 2, cycles: 12,       run: () => this.notImplemented() },
+    0x36: { name: 'LD (HL),d8',  length: 2, cycles: 12,       run: (_pc, bytes) => this.load(bytes, { refTarget: true, target: 'hl', source: 'd8' }) },
     0x37: { name: 'SCF',         length: 1, cycles: 4,        run: () => this.notImplemented() },
     0x38: { name: 'JR C,r8',     length: 2, cycles: [12, 8],  run: (_pc, byte) => this.jump(byte, JumpMode.nc, true) },
     0x39: { name: 'ADD HL,SP',   length: 1, cycles: 8,        run: () => this.cpu.instructions.add('sp') },
-    0x3a: { name: 'LD A,(HL-)',  length: 1, cycles: 8,        run: () => this.notImplemented() },
+    0x3a: { name: 'LD A,(HL-)',  length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'a', refSource: true, source: 'hl', decHl: true }) },
     0x3b: { name: 'DEC SP',      length: 1, cycles: 8,        run: () => this.cpu.instructions.dec('sp') },
     0x3c: { name: 'INC A',       length: 1, cycles: 4,        run: () => this.cpu.instructions.inc('a') },
     0x3d: { name: 'DEC A',       length: 1, cycles: 4,        run: () => this.cpu.instructions.dec('a') },
-    0x3e: { name: 'LD A,d8',     length: 2, cycles: 8,        run: () => this.notImplemented() },
+    0x3e: { name: 'LD A,d8',     length: 2, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'a', source: 'd8' }) },
     0x3f: { name: 'CCF',         length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x40: { name: 'LD B,B',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x41: { name: 'LD B,C',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x42: { name: 'LD B,D',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x43: { name: 'LD B,E',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x44: { name: 'LD B,H',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x45: { name: 'LD B,L',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x46: { name: 'LD B,(HL)',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x47: { name: 'LD B,A',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x48: { name: 'LD C,B',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x49: { name: 'LD C,C',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x4a: { name: 'LD C,D',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x4b: { name: 'LD C,E',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x4c: { name: 'LD C,H',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x4d: { name: 'LD C,L',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x4e: { name: 'LD C,(HL)',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x4f: { name: 'LD C,A',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x50: { name: 'LD D,B',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x51: { name: 'LD D,C',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x52: { name: 'LD D,D',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x53: { name: 'LD D,E',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x54: { name: 'LD D,H',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x55: { name: 'LD D,L',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x56: { name: 'LD D,(HL)',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x57: { name: 'LD D,A',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x58: { name: 'LD E,B',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x59: { name: 'LD E,C',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x5a: { name: 'LD E,D',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x5b: { name: 'LD E,E',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x5c: { name: 'LD E,H',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x5d: { name: 'LD E,L',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x5e: { name: 'LD E,(HL)',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x5f: { name: 'LD E,A',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x60: { name: 'LD H,B',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x61: { name: 'LD H,C',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x62: { name: 'LD H,D',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x63: { name: 'LD H,E',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x64: { name: 'LD H,H',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x65: { name: 'LD H,L',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x66: { name: 'LD H,(HL)',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x67: { name: 'LD H,A',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x68: { name: 'LD L,B',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x69: { name: 'LD L,C',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x6a: { name: 'LD L,D',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x6b: { name: 'LD L,E',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x6c: { name: 'LD L,H',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x6d: { name: 'LD L,L',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x6e: { name: 'LD L,(HL)',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x6f: { name: 'LD L,A',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x70: { name: 'LD (HL),B',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x71: { name: 'LD (HL),C',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x72: { name: 'LD (HL),D',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x73: { name: 'LD (HL),E',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x74: { name: 'LD (HL),H',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x75: { name: 'LD (HL),L',   length: 1, cycles: 8,        run: () => this.notImplemented() },
+    0x40: { name: 'LD B,B',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'b', source: 'b' }) },
+    0x41: { name: 'LD B,C',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'b', source: 'c' }) },
+    0x42: { name: 'LD B,D',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'b', source: 'd' }) },
+    0x43: { name: 'LD B,E',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'b', source: 'e' }) },
+    0x44: { name: 'LD B,H',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'b', source: 'h' }) },
+    0x45: { name: 'LD B,L',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'b', source: 'l' }) },
+    0x46: { name: 'LD B,(HL)',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'b', refSource: true, source: 'hl' }) },
+    0x47: { name: 'LD B,A',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'b', source: 'a' }) },
+    0x48: { name: 'LD C,B',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'c', source: 'b' }) },
+    0x49: { name: 'LD C,C',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'c', source: 'c' }) },
+    0x4a: { name: 'LD C,D',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'c', source: 'd' }) },
+    0x4b: { name: 'LD C,E',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'c', source: 'e' }) },
+    0x4c: { name: 'LD C,H',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'c', source: 'h' }) },
+    0x4d: { name: 'LD C,L',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'c', source: 'l' }) },
+    0x4e: { name: 'LD C,(HL)',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'c', refSource: true, source: 'hl' }) },
+    0x4f: { name: 'LD C,A',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'c', source: 'a' }) },
+    0x50: { name: 'LD D,B',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'd', source: 'b' }) },
+    0x51: { name: 'LD D,C',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'd', source: 'c' }) },
+    0x52: { name: 'LD D,D',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'd', source: 'd' }) },
+    0x53: { name: 'LD D,E',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'd', source: 'e' }) },
+    0x54: { name: 'LD D,H',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'd', source: 'h' }) },
+    0x55: { name: 'LD D,L',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'd', source: 'l' }) },
+    0x56: { name: 'LD D,(HL)',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'd', refSource: true, source: 'hl' }) },
+    0x57: { name: 'LD D,A',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'd', source: 'a' }) },
+    0x58: { name: 'LD E,B',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'e', source: 'b' }) },
+    0x59: { name: 'LD E,C',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'e', source: 'c' }) },
+    0x5a: { name: 'LD E,D',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'e', source: 'd' }) },
+    0x5b: { name: 'LD E,E',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'e', source: 'e' }) },
+    0x5c: { name: 'LD E,H',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'e', source: 'h' }) },
+    0x5d: { name: 'LD E,L',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'e', source: 'l' }) },
+    0x5e: { name: 'LD E,(HL)',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'e', refSource: true, source: 'hl' }) },
+    0x5f: { name: 'LD E,A',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'e', source: 'a' }) },
+    0x60: { name: 'LD H,B',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'h', source: 'b' }) },
+    0x61: { name: 'LD H,C',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'h', source: 'c' }) },
+    0x62: { name: 'LD H,D',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'h', source: 'd' }) },
+    0x63: { name: 'LD H,E',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'h', source: 'e' }) },
+    0x64: { name: 'LD H,H',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'h', source: 'h' }) },
+    0x65: { name: 'LD H,L',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'h', source: 'l' }) },
+    0x66: { name: 'LD H,(HL)',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'h', refSource: true, source: 'hl' }) },
+    0x67: { name: 'LD H,A',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'h', source: 'a' }) },
+    0x68: { name: 'LD L,B',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'l', source: 'b' }) },
+    0x69: { name: 'LD L,C',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'l', source: 'c' }) },
+    0x6a: { name: 'LD L,D',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'l', source: 'd' }) },
+    0x6b: { name: 'LD L,E',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'l', source: 'e' }) },
+    0x6c: { name: 'LD L,H',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'l', source: 'h' }) },
+    0x6d: { name: 'LD L,L',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'l', source: 'l' }) },
+    0x6e: { name: 'LD L,(HL)',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'l', refSource: true, source: 'hl' }) },
+    0x6f: { name: 'LD L,A',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'l', source: 'a' }) },
+    0x70: { name: 'LD (HL),B',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { refTarget: true, target: 'hl', source: 'b' }) },
+    0x71: { name: 'LD (HL),C',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { refTarget: true, target: 'hl', source: 'c' }) },
+    0x72: { name: 'LD (HL),D',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { refTarget: true, target: 'hl', source: 'd' }) },
+    0x73: { name: 'LD (HL),E',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { refTarget: true, target: 'hl', source: 'e' }) },
+    0x74: { name: 'LD (HL),H',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { refTarget: true, target: 'hl', source: 'h' }) },
+    0x75: { name: 'LD (HL),L',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { refTarget: true, target: 'hl', source: 'l' }) },
     0x76: { name: 'HALT',        length: 1, cycles: 4,        run: () => this.cpu.instructions.halt() },
-    0x77: { name: 'LD (HL),A',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x78: { name: 'LD A,B',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x79: { name: 'LD A,C',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x7a: { name: 'LD A,D',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x7b: { name: 'LD A,E',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x7c: { name: 'LD A,H',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x7d: { name: 'LD A,L',      length: 1, cycles: 4,        run: () => this.notImplemented() },
-    0x7e: { name: 'LD A,(HL)',   length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0x7f: { name: 'LD A,A',      length: 1, cycles: 4,        run: () => this.notImplemented() },
+    0x77: { name: 'LD (HL),A',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { refTarget: true, target: 'hl', source: 'a' }) },
+    0x78: { name: 'LD A,B',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'a', source: 'b' }) },
+    0x79: { name: 'LD A,C',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'a', source: 'c' }) },
+    0x7a: { name: 'LD A,D',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'a', source: 'd' }) },
+    0x7b: { name: 'LD A,E',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'a', source: 'e' }) },
+    0x7c: { name: 'LD A,H',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'a', source: 'h' }) },
+    0x7d: { name: 'LD A,L',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'a', source: 'l' }) },
+    0x7e: { name: 'LD A,(HL)',   length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'a', refSource: true, source: 'hl' }) },
+    0x7f: { name: 'LD A,A',      length: 1, cycles: 4,        run: (_pc, bytes) => this.load(bytes, { target: 'a', source: 'a' }) },
     0x80: { name: 'ADD A,B',     length: 1, cycles: 4,        run: () => this.cpu.instructions.add('b') },
     0x81: { name: 'ADD A,C',     length: 1, cycles: 4,        run: () => this.cpu.instructions.add('c') },
     0x82: { name: 'ADD A,D',     length: 1, cycles: 4,        run: () => this.cpu.instructions.add('d') },
@@ -277,7 +323,7 @@ export class OpCodes {
     0xe7: { name: 'RST 20H',     length: 1, cycles: 16,       run: () => this.notImplemented() },
     0xe8: { name: 'ADD SP,r8',   length: 2, cycles: 16,       run: () => this.notImplemented() },
     0xe9: { name: 'JP (HL)',     length: 1, cycles: 4,        run: () => this.jump() },
-    0xea: { name: 'LD (a16),A',  length: 3, cycles: 16,       run: () => this.notImplemented() },
+    0xea: { name: 'LD (a16),A',  length: 3, cycles: 16,       run: (_pc, bytes) => this.load(bytes, { target: 'd16', source: 'a' }) },
     0xeb: null,
     0xec: null,
     0xed: null,
@@ -292,8 +338,8 @@ export class OpCodes {
     0xf6: { name: 'OR d8',       length: 2, cycles: 8,        run: (_pc, [value]) => this.cpu.instructions.or(value) },
     0xf7: { name: 'RST 30H',     length: 1, cycles: 16,       run: () => this.notImplemented() },
     0xf8: { name: 'LD HL,SP+r8', length: 2, cycles: 12,       run: () => this.notImplemented() },
-    0xf9: { name: 'LD SP,HL',    length: 1, cycles: 8,        run: () => this.notImplemented() },
-    0xfa: { name: 'LD A,(a16)',  length: 3, cycles: 16,       run: () => this.notImplemented() },
+    0xf9: { name: 'LD SP,HL',    length: 1, cycles: 8,        run: (_pc, bytes) => this.load(bytes, { target: 'sp', source: 'hl' }) },
+    0xfa: { name: 'LD A,(a16)',  length: 3, cycles: 16,       run: (_pc, bytes) => this.load(bytes, { target: 'a', refSource: true, source: 'd16' }) },
     0xfb: { name: 'EI',          length: 1, cycles: 4,        run: () => this.notImplemented() },
     0xfc: null,
     0xfd: null,
