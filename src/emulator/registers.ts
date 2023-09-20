@@ -155,4 +155,12 @@ export class Registers {
       l: this.l,
     }
   }
+
+  incStackPointer() {
+    this.set('sp', this.get('sp') + 2);
+  }
+
+  decStackPointer() {
+    this.set('sp', this.get('sp') - 2);
+  }
 }

@@ -2,12 +2,11 @@ import { CPU } from "../cpu"
 import { Flag } from "../registers";
 
 const pc = 0x0100;
-const address = [0x22, 0x11];
 
 const execute = (cpu: CPU, opcode: number) => {
   cpu.registers.set('pc', pc);
   cpu.registers.set('sp', 0xfffe);
-  cpu.memory.writeBytes(0x0100, [ opcode, ...address ]);
+  cpu.memory.writeBytes(0x0100, [ opcode, 0x22, 0x11 ]);
 
   cpu.step()
 };
@@ -85,6 +84,14 @@ test('0xdc: CALL C,a16 - C=1', () => {
 
   execute(cpu, 0xdc);
   expectJump(cpu)
+})
+
+test('0xdc: CALL C,a16 - C=0', () => {
+  const cpu = new CPU(() => {});
+  cpu.registers.setFlag(Flag.Carry, false);
+
+  execute(cpu, 0xdc);
+  expectNoJump(cpu)
 })
 
 test('0xdc: CALL C,a16 - C=0', () => {

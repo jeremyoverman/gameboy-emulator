@@ -55,6 +55,14 @@ export class Instructions {
     }
   }
 
+  private readStack() {
+    const sp = this.cpu.registers.get('sp');
+    const lsb = this.cpu.memory.readByte(sp);
+    const msb = this.cpu.memory.readByte(sp + 1);
+
+    return (msb << 8) | lsb
+  }
+
   private _add(num1: number, num2: number, withCarry?: boolean, sixteenBit?: boolean) {
     const maxFull = sixteenBit ? 0xffff : 0xff
     const maxHalf = sixteenBit ? 0xff : 0xf
@@ -453,8 +461,6 @@ export class Instructions {
       target = opts.target
     }
 
-    // this.cpu.instructions.load(bytes, target, opts.refTarget);
-
     if (typeof target === 'number' || opts.refTarget) {
       const destValue = this._getValue(target)
       this.cpu.memory.writeBytes(destValue, Array.from(bytes))
@@ -476,17 +482,12 @@ export class Instructions {
     this.cpu.memory.writeByte(sp - 1, value >> 8)
     this.cpu.memory.writeByte(sp - 2, value & 0xff)
 
-    this.cpu.registers.set('sp', sp - 2)
+    this.cpu.registers.decStackPointer()
   }
 
   pop(reg: CommonSixteenBitRegisterName) {
-    const sp = this.cpu.registers.get('sp');
-    const lsb = this.cpu.memory.readByte(sp);
-    const msb = this.cpu.memory.readByte(sp + 1);
-
-    this.cpu.registers.set('sp', sp + 2)
-
-    this.cpu.registers.set(reg, (msb << 8) | lsb);
+    this.cpu.registers.set(reg, this.readStack())
+    this.cpu.registers.incStackPointer()
   }
 
   call(address: Uint8Array, mode?: JumpMode | null) {
@@ -495,6 +496,17 @@ export class Instructions {
 
     if (newPc !== undefined) {
       this.push(pc + 1)
+    }
+
+    return newPc;
+  }
+
+  ret(mode?: JumpMode) {
+    const address = this.readStack();
+    const newPc = this.jp(address, mode)
+
+    if (newPc !== undefined) {
+      this.cpu.registers.incStackPointer();
     }
 
     return newPc;
