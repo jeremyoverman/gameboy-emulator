@@ -14,6 +14,7 @@ export class CPU {
 
   halted: boolean = false;
   stopped: boolean = false;
+  interruptsEnabled: boolean = true;
 
   constructor(emit: Emitter<keyof CPUEventMap>) {
     this.instructions = new Instructions(this);
@@ -60,5 +61,9 @@ export class CPU {
 
   isStopped() {
     return this.stopped;
+  }
+
+  setInterrupsEnabled(enabled: boolean) {
+    this.interruptsEnabled = enabled;
   }
 }

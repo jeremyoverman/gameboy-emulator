@@ -252,12 +252,12 @@ export class Instructions {
     }
   }
 
-  add_sp(value: number) {
+  add_sp(target: 'sp' | 'hl', value: number) {
     value = this._convertTwosComplement(value)
 
     const sp = this.cpu.registers.get('sp')
     const result = this._add(sp, value)
-    this._setWithFlags('sp', result)
+    this._setWithFlags(target, result)
   }
 
   add(source: ArithmeticRegisterName | number, withCarry?: boolean, reference?: boolean) {
@@ -571,7 +571,7 @@ export class Instructions {
     }
   }
 
-  load(value: Uint8Array, opts: LoadOptions) {
+  ld(value: Uint8Array, opts: LoadOptions) {
     let bytes: Uint8Array;
     let target: LoadByteTarget | number;
 
@@ -613,6 +613,17 @@ export class Instructions {
     }
   }
 
+  ldh(value: Uint8Array, toA: boolean) {
+    const offset = uInt8ArrayToNumber(value)
+    const address = 0xff00 + offset
+
+    if (toA) {
+      this.cpu.registers.set('a', this.cpu.memory.readByte(address));
+    } else {
+      this.cpu.memory.writeByte(address, this.cpu.registers.get('a'));
+    }
+  }
+
   push(reg: CommonSixteenBitRegisterName | number) {
     const sp = this.cpu.registers.get('sp')
     const value = this._getValue(reg)
@@ -648,5 +659,36 @@ export class Instructions {
     }
 
     return newPc;
+  }
+
+  scf() {
+    this.cpu.registers.setFlag(Flag.Carry, true)
+    this.cpu.registers.setFlag(Flag.Subtraction, false)
+    this.cpu.registers.setFlag(Flag.HalfCarry, false)
+  }
+
+  ccf() {
+    this.cpu.registers.setFlag(Flag.Carry, !this.cpu.registers.getFlag(Flag.Carry))
+    this.cpu.registers.setFlag(Flag.Subtraction, false)
+    this.cpu.registers.setFlag(Flag.HalfCarry, false)
+  }
+
+  ei() {
+    this.cpu.setInterrupsEnabled(true)
+  }
+
+  di() {
+    this.cpu.setInterrupsEnabled(false)
+  }
+
+  reti() {
+    this.ret();
+    this.ei();
+  }
+
+  rst(offset: Uint8Array | number) {
+    const value = uInt8ArrayToNumber(offset);
+    this.push(this.cpu.registers.get('pc'))
+    this.jp(0x0000 + value)
   }
 }

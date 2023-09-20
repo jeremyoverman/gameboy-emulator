@@ -997,3 +997,25 @@ test('0xfa: LD A,(a16)', () => {
 
   expect(cpu.registers.get('a')).toBe(0xaa)
 })
+test('0xf0: LDH A,(a8)', () => {
+  const cpu = new CPU(() => {})
+
+  cpu.registers.set('pc', 0x0000)
+  cpu.memory.writeByte(0xff03, 0xaa)
+  cpu.memory.writeBytes(0x0000, [0xf0, 0x03]) // LDH A,(a8)
+
+  cpu.step()
+
+  expect(cpu.registers.get('a')).toBe(0xaa)
+})
+test('0xe0: LDH (a8),A', () => {
+  const cpu = new CPU(() => {})
+
+  cpu.registers.set('pc', 0x0000)
+  cpu.registers.set('a', 0xaa)
+  cpu.memory.writeBytes(0x0000, [0xe0, 0x03]) // LDH (a8),A
+
+  cpu.step()
+
+  expect(cpu.memory.readByte(0xff03)).toBe(0xaa)
+})
