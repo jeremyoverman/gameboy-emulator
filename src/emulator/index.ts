@@ -1,11 +1,10 @@
 import { CPU, CPUEventMap } from "./cpu";
 
-type EventMap = CPUEventMap;
+export type EventMap = CPUEventMap;
 
 export type SubscriptionFunction = () => void;
 export type Emitter<T extends keyof EventMap> = (
   event: T,
-  data: Parameters<EventMap[T]>[0]
 ) => void;
 
 export class Emulator {
@@ -16,7 +15,12 @@ export class Emulator {
   } = {};
 
   constructor() {
+    console.log('Creating a new emulator')
     this.cpu = new CPU(this.emit);
+  }
+
+  loadBootRom(file: File) {
+    this.cpu.memory.loadRomFile(file, true);
   }
 
   // Method to register an event listener
@@ -37,7 +41,7 @@ export class Emulator {
   }
 
   // Method to emit events
-  private emit: Emitter<keyof EventMap> = (event, data) => {
-    this.eventListeners[event]?.forEach((callback) => callback(data));
+  private emit: Emitter<keyof EventMap> = (event) => {
+    this.eventListeners[event]?.forEach((callback) => callback());
   };
 }

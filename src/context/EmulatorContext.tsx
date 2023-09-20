@@ -1,28 +1,42 @@
-import React, { createContext, useState, useEffect } from "react";
-import { Emulator } from '../emulator';
+import React, { createContext, useEffect } from "react";
+import { Emulator, EventMap } from '../emulator';
 
 interface EmulatorContextType {
   emulator?: Emulator;
-  registers: {
-    [key: string]: number[];
-  };
+  paused: boolean;
+  vblankCounter: number;
 }
 
 export const EmulatorContext = createContext<EmulatorContextType>({
-  registers: {}
+  paused: true,
+  vblankCounter: 0,
 });
 
 export const EmulatorProvider = ({
   children
 }: { children: React.ReactNode }) => {
-  const emulator = new Emulator();
-
-  const [registers, setRegisters] = useState(emulator.registers.getAll());
+  const [emulator, setEmulator] = React.useState<Emulator>();
+  const [paused, setPaused] = React.useState(true);
+  const [vblankCounter, setVblankCounter] = React.useState(0);
 
   useEffect(() => {
-    const handlers = {
-      'registerUpdate': () => {
-        setRegisters(emulator.registers.getAll());
+    if (!emulator) {
+      setEmulator(new Emulator());
+    }
+
+    if (!emulator) {
+      return;
+    }
+
+    const handlers: { [key in keyof EventMap]: () => void } = {
+      vblank: () => {
+        setVblankCounter((prev) => prev + 1);
+      },
+      pause: () => {
+        setPaused(emulator.cpu.paused)
+      },
+      resume: () => {
+        setPaused(emulator.cpu.paused)
       }
     }
 
@@ -35,14 +49,13 @@ export const EmulatorProvider = ({
         emulator.off((event as keyof typeof handlers), handlers[event as keyof typeof handlers]);
       });
     };
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [emulator]);
 
   return (
     <EmulatorContext.Provider value={{
       emulator,
-      registers
+      vblankCounter,
+      paused,
     }}>
       {children}
     </EmulatorContext.Provider>

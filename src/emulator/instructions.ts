@@ -3,8 +3,8 @@ import {
   ArithmeticRegisterName,
   Flag,
   RegisterName,
-  CommonSixteenBitRegisterName,
-  CommonEightBitRegisterName,
+  GpSixteenBitRegisterName,
+  GpEightBitRegisterName,
 } from './registers'
 import { uInt8ArrayToNumber } from './utils'
 
@@ -16,7 +16,7 @@ type ArithmeticReturn = {
   subtraction: boolean
 }
 
-export type LoadByteTarget = CommonEightBitRegisterName | CommonSixteenBitRegisterName | 'sp'
+export type LoadByteTarget = GpEightBitRegisterName | GpSixteenBitRegisterName | 'sp'
 export type LoadByteSource = LoadByteTarget | 'd8' | 'd16'
 
 export enum JumpMode {
@@ -127,7 +127,7 @@ export class Instructions {
     return ret
   }
 
-  private _getValue(source: ArithmeticRegisterName | number) {
+  private _getValue(source: ArithmeticRegisterName | 'pc' | number) {
     return typeof source === 'number' ? source : this.cpu.registers.get(source)
   }
 
@@ -148,7 +148,7 @@ export class Instructions {
       return false
     }
 
-    return this.cpu.registers.is16Bit(source as CommonSixteenBitRegisterName)
+    return this.cpu.registers.is16Bit(source as GpSixteenBitRegisterName)
   }
 
   private _convertTwosComplement(value: number) {
@@ -216,7 +216,7 @@ export class Instructions {
     this.cpu.stop()
   }
 
-  bit(source: CommonEightBitRegisterName | 'hl', bit: number) {
+  bit(source: GpEightBitRegisterName | 'hl', bit: number) {
     let value = this.cpu.registers.get(source)
     if (source === 'hl') {
       value = this.cpu.memory.readByte(value);
@@ -228,7 +228,7 @@ export class Instructions {
     this.cpu.registers.setFlag(Flag.HalfCarry, true)
   }
 
-  set(reg: CommonEightBitRegisterName | 'hl', bit: number) {
+  set(reg: GpEightBitRegisterName | 'hl', bit: number) {
     const { address, value } = this.getValueAndAddress(reg, reg === 'hl')
 
     const result = value | (0x1 << bit);
@@ -240,7 +240,7 @@ export class Instructions {
     }
   }
 
-  reset(reg: CommonEightBitRegisterName | 'hl', bit: number) {
+  reset(reg: GpEightBitRegisterName | 'hl', bit: number) {
     const { address, value } = this.getValueAndAddress(reg, reg === 'hl')
 
     const result = value & ~(0x1 << bit)
@@ -624,7 +624,7 @@ export class Instructions {
     }
   }
 
-  push(reg: CommonSixteenBitRegisterName | number) {
+  push(reg: GpSixteenBitRegisterName | 'pc' | number) {
     const sp = this.cpu.registers.get('sp')
     const value = this._getValue(reg)
 
@@ -634,7 +634,7 @@ export class Instructions {
     this.cpu.registers.decStackPointer()
   }
 
-  pop(reg: CommonSixteenBitRegisterName) {
+  pop(reg: GpSixteenBitRegisterName) {
     this.cpu.registers.set(reg, this.readStack())
     this.cpu.registers.incStackPointer()
   }
@@ -674,11 +674,11 @@ export class Instructions {
   }
 
   ei() {
-    this.cpu.setInterrupsEnabled(true)
+    this.cpu.setIME(true)
   }
 
   di() {
-    this.cpu.setInterrupsEnabled(false)
+    this.cpu.setIME(false)
   }
 
   reti() {
