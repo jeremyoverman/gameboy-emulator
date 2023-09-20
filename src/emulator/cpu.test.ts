@@ -26,6 +26,18 @@ test("Stepping 2-byte instruction", () => {
   expect(cpu.registers.get('pc')).toBe(0x0002);
 });
 
+test("Jumping", () => {
+  const cpu = new CPU(() => {});
+
+  cpu.registers.set("pc", 0x0000);
+  cpu.memory.writeBytes(0x0000, 
+    [0xc3, 0xAA, 0xBB] // JP a16
+  );
+  cpu.step();
+
+  expect(cpu.registers.get('pc')).toBe(0xBBAA);
+});
+
 test("Multiple bit operations", () => {
   const cpu = new CPU(() => {});
 

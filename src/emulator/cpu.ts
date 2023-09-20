@@ -34,7 +34,7 @@ export class CPU {
       opcode = this.opcodes.prefixOpcodes[instructionByte];
     } else {
       opcode = this.opcodes.opcodes[instructionByte];
-      args = this.memory.readNext(pc, (opcode?.length || 1) - 1)
+      args = this.memory.readBytes(pc + 1, (opcode?.length || 1))
     }
 
     if (!opcode) {
@@ -42,7 +42,7 @@ export class CPU {
     }
 
     const result = opcode.run(pc, args);
-    this.registers.set('pc', result != undefined ? result : pc + opcode.length);
+    this.registers.set('pc', result !== undefined ? result : pc + opcode.length);
   }
 
   halt() {

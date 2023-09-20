@@ -4,6 +4,7 @@ import {
   Flag,
   RegisterName,
   CommonSixteenBitRegisterName,
+  CommonEightBitRegisterName,
 } from "./registers";
 
 type ArithmeticReturn = {
@@ -13,6 +14,13 @@ type ArithmeticReturn = {
   zero: boolean;
   subtraction: boolean;
 };
+
+export enum JumpMode {
+  nz, z, nc, c
+}
+
+type LoadByteTarget = CommonEightBitRegisterName | 'hli';
+type LoadByteSource = LoadByteTarget | 'd8';
 
 export class Instructions {
   private cpu: CPU;
@@ -111,6 +119,18 @@ export class Instructions {
     }
 
     return this.cpu.registers.is16Bit(source as CommonSixteenBitRegisterName);
+  }
+
+  private _convertTwosComplement(value: number) {
+    // Check if the most significant bit (MSB) is set
+    if (value & 0x80) {
+      // If MSB is set, it's a negative value
+      // Perform two's complement to convert to signed int
+      return -((~value & 0xFF) + 1);
+    } else {
+      // If MSB is not set, it's a positive value
+      return value;
+    }
   }
 
   _rotate(
@@ -387,5 +407,61 @@ export class Instructions {
     this.cpu.registers.setFlag(Flag.Subtraction, false);
     this.cpu.registers.setFlag(Flag.HalfCarry, false);
     this.cpu.registers.setFlag(Flag.Zero, result === 0);
+  }
+
+  jp(value: number, mode?: JumpMode | null, relative?: boolean) {
+    let address = value;
+
+    if (relative) {
+      const pc = this.cpu.registers.get("pc");
+      address = pc + this._convertTwosComplement(value);
+    }
+
+    if (mode === JumpMode.nz) {
+      if (!this.cpu.registers.getFlag(Flag.Zero)) {
+        this.cpu.registers.set("pc", address);
+        return true;
+      }
+    } else if (mode === JumpMode.z) {
+      if (this.cpu.registers.getFlag(Flag.Zero)) {
+        this.cpu.registers.set("pc", address);
+        return true;
+      }
+    } else if (mode === JumpMode.nc) {
+      if (!this.cpu.registers.getFlag(Flag.Carry)) {
+        this.cpu.registers.set("pc", address);
+        return true;
+      }
+    } else if (mode === JumpMode.c) {
+      if (this.cpu.registers.getFlag(Flag.Carry)) {
+        this.cpu.registers.set("pc", address);
+        return true;
+      }
+    } else {
+      this.cpu.registers.set("pc", address);
+      return true;
+    }
+
+    return false;
+  }
+
+  load(source: LoadByteSource, dest: LoadByteTarget) {
+    let value = 0;
+
+    if (source === 'hli') {
+      const hl = this.cpu.registers.get("hl");
+      value = this.cpu.memory.readByte(hl);
+    } else if (source === 'd8') {
+      value = this.cpu.memory.readByte(this.cpu.registers.get("pc") + 1);
+    } else {
+      value = this.cpu.registers.get(source);
+    }
+
+    if (dest == 'hli') {
+      const hl = this.cpu.registers.get("hl");
+      this.cpu.memory.writeByte(hl, value);
+    } else {
+      this.cpu.registers.set(dest, value);
+    }
   }
 }

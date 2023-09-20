@@ -5,8 +5,8 @@ export class Memory {
     return this.memory[address];
   }
 
-  readNext(address: number, num: number) {
-    return this.memory.slice(address + 1, address + num + 1);
+  readBytes(address: number, num: number) {
+    return this.memory.slice(address, address + num);
   }
 
   writeByte(address: number, value: number) {
