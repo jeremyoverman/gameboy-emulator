@@ -6,6 +6,7 @@ import {
   CommonSixteenBitRegisterName,
   CommonEightBitRegisterName,
 } from './registers'
+import { uInt8ArrayToNumber } from './utils'
 
 type ArithmeticReturn = {
   value: number
@@ -23,6 +24,17 @@ export enum JumpMode {
   z,
   nc,
   c,
+}
+
+export interface LoadOptions {
+  refTarget?: boolean
+  target: LoadByteTarget | 'd16'
+
+  refSource?: boolean
+  source: LoadByteSource
+
+  incHl?: boolean
+  decHl?: boolean
 }
 
 export class Instructions {
@@ -367,49 +379,124 @@ export class Instructions {
     this.cpu.registers.setFlag(Flag.Zero, result === 0)
   }
 
-  jp(value: number, mode?: JumpMode | null, relative?: boolean) {
-    let address = value
+  jp(value?: Uint8Array | number, mode?: JumpMode | null, relative?: boolean) {
+    let address: number;
+    
+    if (value !== undefined) {
+      address = uInt8ArrayToNumber(value);
+    } else {
+      address = this.cpu.registers.get('hl')
+    }
 
     if (relative) {
       const pc = this.cpu.registers.get('pc')
-      address = pc + this._convertTwosComplement(value)
+      address = pc + this._convertTwosComplement(address)
     }
+
+    let jumped = false;
 
     if (mode === JumpMode.nz) {
       if (!this.cpu.registers.getFlag(Flag.Zero)) {
         this.cpu.registers.set('pc', address)
-        return true
+        jumped = true
       }
     } else if (mode === JumpMode.z) {
       if (this.cpu.registers.getFlag(Flag.Zero)) {
         this.cpu.registers.set('pc', address)
-        return true
+        jumped = true
       }
     } else if (mode === JumpMode.nc) {
       if (!this.cpu.registers.getFlag(Flag.Carry)) {
         this.cpu.registers.set('pc', address)
-        return true
+        jumped = true
       }
     } else if (mode === JumpMode.c) {
       if (this.cpu.registers.getFlag(Flag.Carry)) {
         this.cpu.registers.set('pc', address)
-        return true
+        jumped = true
       }
     } else {
       this.cpu.registers.set('pc', address)
-      return true
+      jumped = true
     }
 
-    return false
+    if (jumped) {
+      return this.cpu.registers.get('pc');
+    }
   }
 
-  load(value: Uint8Array, dest: LoadByteTarget | number, reference?: boolean) {
-    if (typeof dest === 'number' || reference) {
-      const destValue = this._getValue(dest)
+  load(value: Uint8Array, opts: LoadOptions) {
+    let bytes: Uint8Array;
+    let target: LoadByteTarget | number;
 
-      this.cpu.memory.writeBytes(destValue, Array.from(value))
+    if (opts.source === 'd8' || opts.source === 'd16') {
+      bytes = value;
     } else {
-      this.cpu.registers.setUint8Array(dest, value)
+      bytes = this.cpu.registers.getUint8Array(opts.source as RegisterName)
     }
+
+    if (opts.refSource) {
+      let address = uInt8ArrayToNumber(bytes);
+
+      if (opts.source === 'c') {
+        address += 0xff00;
+      }
+
+      bytes = this.cpu.memory.readBytes(address, 1)
+    }
+
+    if (opts.target === 'd16') {
+      target = uInt8ArrayToNumber(value);
+    } else if (opts.refTarget && opts.target === 'c') {
+      target = 0xff00 + this.cpu.registers.get('c')
+    } else {
+      target = opts.target
+    }
+
+    // this.cpu.instructions.load(bytes, target, opts.refTarget);
+
+    if (typeof target === 'number' || opts.refTarget) {
+      const destValue = this._getValue(target)
+      this.cpu.memory.writeBytes(destValue, Array.from(bytes))
+    } else {
+      this.cpu.registers.setUint8Array(target, bytes)
+    }
+
+    if (opts.incHl) {
+      this.cpu.instructions.inc('hl')
+    } else if (opts.decHl) {
+      this.cpu.instructions.dec('hl')
+    }
+  }
+
+  push(reg: CommonSixteenBitRegisterName | number) {
+    const sp = this.cpu.registers.get('sp')
+    const value = this._getValue(reg)
+
+    this.cpu.memory.writeByte(sp - 1, value >> 8)
+    this.cpu.memory.writeByte(sp - 2, value & 0xff)
+
+    this.cpu.registers.set('sp', sp - 2)
+  }
+
+  pop(reg: CommonSixteenBitRegisterName) {
+    const sp = this.cpu.registers.get('sp');
+    const lsb = this.cpu.memory.readByte(sp);
+    const msb = this.cpu.memory.readByte(sp + 1);
+
+    this.cpu.registers.set('sp', sp + 2)
+
+    this.cpu.registers.set(reg, (msb << 8) | lsb);
+  }
+
+  call(address: Uint8Array, mode?: JumpMode | null) {
+    const pc = this.cpu.registers.get('pc');
+    const newPc = this.jp(address, mode)
+
+    if (newPc !== undefined) {
+      this.push(pc + 1)
+    }
+
+    return newPc;
   }
 }
