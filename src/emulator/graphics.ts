@@ -13,6 +13,8 @@ export class Graphics {
 
     if (ly > 153) {
       ly = 0;
+    } else if (ly === 144) {
+      this.cpu.interrupt('vblank');
     }
 
     this.cpu.memory.writeByte(IO_REGISTERS.ly, ly)

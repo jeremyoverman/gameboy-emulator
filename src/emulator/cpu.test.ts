@@ -1,4 +1,5 @@
 import { CPU } from './cpu'
+import { INTERRUPTS } from './memory'
 
 test('Stepping an instruction', () => {
   const cpu = new CPU(() => {})
@@ -64,4 +65,52 @@ test('Multiple bit operations', () => {
   expect(cpu.registers.get('b')).toBe(0x01)
   expect(cpu.registers.get('c')).toBe(0x01)
   expect(cpu.registers.get('d')).toBe(0x01)
+})
+
+test("Handling a vblank interrupt", () => {
+  const cpu = new CPU(() => {})
+
+  cpu.registers.set('pc', 0x0000)
+  cpu.registers.set('sp', 0xfffe)
+  cpu.memory.writeBytes(0xbb00, [0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+  cpu.memory.writeBytes(0x0000, [
+    0x3e, 0xa0,       // $0000; LD A, 0xa0
+    0x21, 0x00, 0xbb, // $0002; LD HL, 0xbb00
+    0x22,             // $0005; LD (HL+), A
+    0x3c,             // $0006; INC A
+    0xc3, 0x05, 0x00, // $0007; JP a16, 0x0005
+  ])
+  cpu.memory.writeBytes(INTERRUPTS.vblank.jump, [
+    0x06, 0xaa,       // $0040; LD B, 0xaa
+    0xd9,             // $0042; RETI
+  ])
+
+  for (let i = 0; i < 10; i++) {
+    cpu.step()
+  }
+
+  expect(cpu.memory.readBytes(0xbb00, 6)).toEqual(new Uint8Array([0xa0, 0xa1, 0xa2, 0x00, 0x00, 0x00]))
+
+  // Enable vblank interrupt
+  cpu.memory.writeByte(0xffff, 0b0000_0001)
+  cpu.interrupt('vblank')
+
+  expect(cpu.memory.getInterruptFlag('vblank')).toBe(true)
+  expect(cpu.registers.get('pc')).toBe(0x0007)
+  cpu.step()
+
+  expect(cpu.registers.get('pc')).toBe(0x0040)
+
+  // Run the vblank handler
+  cpu.step()
+  cpu.step()
+
+  expect(cpu.registers.get('b')).toBe(0xaa)
+  expect(cpu.registers.get('pc')).toBe(0x0007)
+
+  for (let i = 0; i < 9; i++) {
+    cpu.step()
+  }
+
+  expect(cpu.memory.readBytes(0xbb00, 6)).toEqual(new Uint8Array([0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5]))
 })

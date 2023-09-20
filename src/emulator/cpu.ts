@@ -1,7 +1,7 @@
 import { Emitter } from ".";
 import { Graphics } from "./graphics";
 import { Instructions } from "./instructions";
-import { Memory } from "./memory";
+import { INTERRUPTS, INTERRUPT_PRIORITY, Interrupt, Memory } from "./memory";
 import { OpCodeDefinition, OpCodes } from "./opcodes";
 import { Registers } from "./registers";
 
@@ -54,8 +54,8 @@ export class CPU {
     this.setCyclesPerFrame();
   }
 
-  interrupt() {
-    this.interruptEnable = true;
+  interrupt(interrupt: Interrupt) {
+    this.memory.setInterruptFlag(interrupt, true);
   }
 
   private addCycles(cycles: number) {
@@ -106,6 +106,24 @@ export class CPU {
     }
   }
 
+  handleInterrupt() {
+    if (!this.interrupMasterEnabled) {
+      return;
+    }
+
+    let jumpAddress: number | undefined;
+
+    INTERRUPT_PRIORITY.some((interrupt) => {
+      if (this.memory.getInterruptFlag(interrupt)) {
+        this.memory.setInterruptFlag(interrupt, false);
+        jumpAddress = INTERRUPTS[interrupt].jump;
+        return true;
+      }
+    });
+
+    return jumpAddress
+  }
+
   step() {
     const pc = this.registers.get('pc');
 
@@ -114,27 +132,17 @@ export class CPU {
       this.graphics.renderScanline();
     }
 
-    // 2. If the IME flag is set & the corresponding IE flag
-    // is set, the following 3 steps are performed.
-    // 3. Reset the IME flag and prevent all interrupts.
-    // 4. The PC (program counter) is pushed onto the stack.
-    // 5. Jump to the starting address of the interrupt.
-
-    // if (this.interrupMasterEnabled && this.interruptEnable) {
-    //   this.setIME(false);
-    //   this.instructions.push('pc');
-    // }
-
-    let instructionByte = this.memory.readByte(pc);
-
-    if (instructionByte === undefined) {
-      throw new Error(`Instruction byte at ${pc} is undefined!`);
-    }
-
     let opcode: OpCodeDefinition;
     let args = new Uint8Array(0);
 
-    if (instructionByte === 0xcb) {
+    let instructionByte = this.memory.readByte(pc);
+    const interruptJumpAddress = this.handleInterrupt();
+
+    if (interruptJumpAddress !== undefined) {
+      instructionByte = 0xcd; // CALL a16
+      opcode = this.opcodes.opcodes[instructionByte];
+      args = new Uint8Array([interruptJumpAddress & 0xff, (interruptJumpAddress >> 8) & 0xff])
+    } else if (instructionByte === 0xcb) {
       instructionByte = this.memory.readByte(pc + 1);
       opcode = this.opcodes.prefixOpcodes[instructionByte];
     } else {
@@ -147,7 +155,13 @@ export class CPU {
       throw new Error(`${instructionByte} not implemented!`);
     }
 
-    this.registers.set('pc', pc + opcode.length);
+    if (interruptJumpAddress === undefined) {
+      this.registers.set('pc', pc + opcode.length);
+    } else {
+      // The CALL instruction will push PC + 1 to the stack, so we need to
+      // subtract 1 from the PC to get the correct value.
+      this.registers.set('pc', pc - 1);
+    }
     const result = opcode.run(pc, args);
 
     if (Array.isArray(opcode.cycles)) {
