@@ -689,6 +689,6 @@ export class Instructions {
   rst(offset: Uint8Array | number) {
     const value = uInt8ArrayToNumber(offset);
     this.push(this.cpu.registers.get('pc'))
-    this.jp(0x0000 + value)
+    return this.jp(value)
   }
 }
