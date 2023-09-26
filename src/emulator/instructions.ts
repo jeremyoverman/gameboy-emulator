@@ -38,11 +38,11 @@ export interface LoadOptions {
 }
 
 export interface RotateOptions {
-  direction: 'left' | 'right',
-  throughCarry?: boolean,
-  shift?: boolean,
-  preserveMsb?: boolean,
-  reference?: boolean,
+  direction: 'left' | 'right'
+  throughCarry?: boolean
+  shift?: boolean
+  preserveMsb?: boolean
+  reference?: boolean
 }
 
 export class Instructions {
@@ -64,9 +64,9 @@ export class Instructions {
   }
 
   private readStack() {
-    const sp = this.cpu.registers.get('sp');
-    const lsb = this.cpu.memory.readByte(sp);
-    const msb = this.cpu.memory.readByte(sp + 1);
+    const sp = this.cpu.registers.get('sp')
+    const lsb = this.cpu.memory.readByte(sp)
+    const msb = this.cpu.memory.readByte(sp + 1)
 
     return (msb << 8) | lsb
   }
@@ -132,12 +132,12 @@ export class Instructions {
   }
 
   private getValueAndAddress(source: ArithmeticRegisterName | number, reference?: boolean) {
-    let address: number | undefined = undefined;
+    let address: number | undefined = undefined
     let value = this._getValue(source)
 
     if (reference) {
-      address = value;
-      value = this.cpu.memory.readByte(value);
+      address = value
+      value = this.cpu.memory.readByte(value)
     }
 
     return { address, value }
@@ -166,7 +166,7 @@ export class Instructions {
   _rotate(reg: ArithmeticRegisterName, opts: RotateOptions) {
     const { address, value } = this.getValueAndAddress(reg, opts.reference)
 
-    const is16Bit = this.cpu.registers.is16Bit(reg) && !opts.reference;
+    const is16Bit = this.cpu.registers.is16Bit(reg) && !opts.reference
     const leftBit = is16Bit ? 15 : 7
     const msb = (value >> leftBit) & 0x1
 
@@ -196,7 +196,7 @@ export class Instructions {
     }
 
     if (address) {
-      this.cpu.memory.writeByte(address, result);
+      this.cpu.memory.writeByte(address, result)
     } else {
       this.cpu.registers.set(reg, result)
     }
@@ -219,7 +219,7 @@ export class Instructions {
   bit(source: GpEightBitRegisterName | 'hl', bit: number) {
     let value = this.cpu.registers.get(source)
     if (source === 'hl') {
-      value = this.cpu.memory.readByte(value);
+      value = this.cpu.memory.readByte(value)
     }
     const bitValue = (value >> bit) & 0x1
 
@@ -231,10 +231,10 @@ export class Instructions {
   set(reg: GpEightBitRegisterName | 'hl', bit: number) {
     const { address, value } = this.getValueAndAddress(reg, reg === 'hl')
 
-    const result = value | (0x1 << bit);
+    const result = value | (0x1 << bit)
 
     if (address) {
-      this.cpu.memory.writeByte(address, result);
+      this.cpu.memory.writeByte(address, result)
     } else {
       this.cpu.registers.set(reg, result)
     }
@@ -246,7 +246,7 @@ export class Instructions {
     const result = value & ~(0x1 << bit)
 
     if (address) {
-      this.cpu.memory.writeByte(address, result);
+      this.cpu.memory.writeByte(address, result)
     } else {
       this.cpu.registers.set(reg, result)
     }
@@ -265,7 +265,7 @@ export class Instructions {
     let value = this._getValue(source)
 
     if (reference) {
-      value = this.cpu.memory.readByte(value);
+      value = this.cpu.memory.readByte(value)
       const result = this._add(this.cpu.registers.get('a'), value, withCarry)
       this._setWithFlags('a', result)
     } else if (sixteenBit) {
@@ -287,7 +287,7 @@ export class Instructions {
     let value = this._getValue(source)
 
     if (reference) {
-      value = this.cpu.memory.readByte(value);
+      value = this.cpu.memory.readByte(value)
       const result = this._subtract(this.cpu.registers.get('a'), value, withCarry)
       this._setWithFlags('a', result)
     } else if (sixteenBit) {
@@ -309,7 +309,7 @@ export class Instructions {
     let value = this._getValue(source)
 
     if (reference) {
-      value = this.cpu.memory.readByte(value);
+      value = this.cpu.memory.readByte(value)
     }
 
     this.cpu.registers.set(reg, this.cpu.registers.get(reg) & value)
@@ -320,7 +320,7 @@ export class Instructions {
     let value = this._getValue(source)
 
     if (reference) {
-      value = this.cpu.memory.readByte(value);
+      value = this.cpu.memory.readByte(value)
     }
 
     this.cpu.registers.set(reg, this.cpu.registers.get(reg) ^ value)
@@ -331,19 +331,19 @@ export class Instructions {
     let value = this._getValue(source)
 
     if (reference) {
-      value = this.cpu.memory.readByte(value);
+      value = this.cpu.memory.readByte(value)
     }
 
     this.cpu.registers.set(reg, this.cpu.registers.get(reg) | value)
   }
 
   cp(source: ArithmeticRegisterName | number, reference?: boolean) {
-    const sixteenBit = this._is16bit(source) && !reference;
+    const sixteenBit = this._is16bit(source) && !reference
     const reg = sixteenBit ? 'hl' : 'a'
     let value = this._getValue(source)
 
     if (reference) {
-      value = this.cpu.memory.readByte(value);
+      value = this.cpu.memory.readByte(value)
     }
 
     const result = this._subtract(this.cpu.registers.get(reg), value, false, sixteenBit)
@@ -355,11 +355,11 @@ export class Instructions {
     let value = this._getValue(source)
 
     if (reference) {
-      const address = value;
-      value = this.cpu.memory.readByte(value);
+      const address = value
+      value = this.cpu.memory.readByte(value)
       const result = this._add(value, 1, false, this._is16bit(source))
 
-      this.cpu.memory.writeByte(address, result.value);
+      this.cpu.memory.writeByte(address, result.value)
       this._setWithFlags(null, result)
     } else {
       const result = this._add(value, 1, false, this._is16bit(source))
@@ -371,11 +371,11 @@ export class Instructions {
     let value = this._getValue(source)
 
     if (reference) {
-      const address = value;
-      value = this.cpu.memory.readByte(value);
+      const address = value
+      value = this.cpu.memory.readByte(value)
       const result = this._subtract(value, 1, false, this._is16bit(source))
 
-      this.cpu.memory.writeByte(address, result.value);
+      this.cpu.memory.writeByte(address, result.value)
       this._setWithFlags(null, result)
     } else {
       const result = this._subtract(value, 1, false, this._is16bit(source))
@@ -421,7 +421,7 @@ export class Instructions {
   rlca(reference?: boolean) {
     this._rotate('a', {
       direction: 'left',
-      reference
+      reference,
     })
   }
 
@@ -429,14 +429,14 @@ export class Instructions {
     this._rotate('a', {
       direction: 'left',
       throughCarry: true,
-      reference
+      reference,
     })
   }
 
   rrca(reference?: boolean) {
     this._rotate('a', {
       direction: 'right',
-      reference
+      reference,
     })
   }
 
@@ -444,14 +444,14 @@ export class Instructions {
     this._rotate('a', {
       direction: 'right',
       throughCarry: true,
-      reference
+      reference,
     })
   }
 
   rlc(reg: ArithmeticRegisterName, reference?: boolean) {
     this._rotate(reg, {
       direction: 'left',
-      reference
+      reference,
     })
   }
 
@@ -459,14 +459,14 @@ export class Instructions {
     this._rotate(reg, {
       direction: 'left',
       throughCarry: true,
-      reference
+      reference,
     })
   }
 
   rrc(reg: ArithmeticRegisterName, reference?: boolean) {
     this._rotate(reg, {
       direction: 'right',
-      reference
+      reference,
     })
   }
 
@@ -474,7 +474,7 @@ export class Instructions {
     this._rotate(reg, {
       direction: 'right',
       throughCarry: true,
-      reference
+      reference,
     })
   }
 
@@ -482,7 +482,7 @@ export class Instructions {
     this._rotate(reg, {
       direction: 'left',
       shift: true,
-      reference
+      reference,
     })
   }
 
@@ -491,7 +491,7 @@ export class Instructions {
       direction: 'right',
       shift: true,
       preserveMsb: true,
-      reference
+      reference,
     })
   }
 
@@ -499,13 +499,13 @@ export class Instructions {
     this._rotate(reg, {
       direction: 'right',
       shift: true,
-      reference
+      reference,
     })
   }
 
   swap(reg: ArithmeticRegisterName, reference?: boolean) {
-    const { address, value } = this.getValueAndAddress(reg, reference);
-    const is16Bit = this.cpu.registers.is16Bit(reg) && !reference;
+    const { address, value } = this.getValueAndAddress(reg, reference)
+    const is16Bit = this.cpu.registers.is16Bit(reg) && !reference
 
     const shift = is16Bit ? 8 : 4
     const lowerMask = is16Bit ? 0xff : 0xf
@@ -515,7 +515,7 @@ export class Instructions {
     const result = (low << shift) | high
 
     if (address) {
-      this.cpu.memory.writeByte(address, result);
+      this.cpu.memory.writeByte(address, result)
     } else {
       this.cpu.registers.set(reg, result)
     }
@@ -526,10 +526,10 @@ export class Instructions {
   }
 
   jp(value?: Uint8Array | number, mode?: JumpMode | null, relative?: boolean) {
-    let address: number;
-    
+    let address: number
+
     if (value !== undefined) {
-      address = uInt8ArrayToNumber(value);
+      address = uInt8ArrayToNumber(value)
     } else {
       address = this.cpu.registers.get('hl')
     }
@@ -539,7 +539,7 @@ export class Instructions {
       address = pc + this._convertTwosComplement(address)
     }
 
-    let jumped = false;
+    let jumped = false
 
     if (mode === JumpMode.nz) {
       if (!this.cpu.registers.getFlag(Flag.Zero)) {
@@ -567,32 +567,32 @@ export class Instructions {
     }
 
     if (jumped) {
-      return this.cpu.registers.get('pc');
+      return this.cpu.registers.get('pc')
     }
   }
 
   ld(value: Uint8Array, opts: LoadOptions) {
-    let bytes: Uint8Array;
-    let target: LoadByteTarget | number;
+    let bytes: Uint8Array
+    let target: LoadByteTarget | number
 
     if (opts.source === 'd8' || opts.source === 'd16') {
-      bytes = value;
+      bytes = value
     } else {
       bytes = this.cpu.registers.getUint8Array(opts.source as RegisterName)
     }
 
     if (opts.refSource) {
-      let address = uInt8ArrayToNumber(bytes);
+      let address = uInt8ArrayToNumber(bytes)
 
       if (opts.source === 'c') {
-        address += 0xff00;
+        address += 0xff00
       }
 
       bytes = this.cpu.memory.readBytes(address, 1)
     }
 
     if (opts.target === 'd16') {
-      target = uInt8ArrayToNumber(value);
+      target = uInt8ArrayToNumber(value)
     } else if (opts.refTarget && opts.target === 'c') {
       target = 0xff00 + this.cpu.registers.get('c')
     } else {
@@ -618,9 +618,9 @@ export class Instructions {
     const address = 0xff00 + offset
 
     if (toA) {
-      this.cpu.registers.set('a', this.cpu.memory.readByte(address));
+      this.cpu.registers.set('a', this.cpu.memory.readByte(address))
     } else {
-      this.cpu.memory.writeByte(address, this.cpu.registers.get('a'));
+      this.cpu.memory.writeByte(address, this.cpu.registers.get('a'))
     }
   }
 
@@ -640,25 +640,25 @@ export class Instructions {
   }
 
   call(address: Uint8Array, mode?: JumpMode | null) {
-    const pc = this.cpu.registers.get('pc');
+    const pc = this.cpu.registers.get('pc')
     const newPc = this.jp(address, mode)
 
     if (newPc !== undefined) {
-      this.push(pc + 1)
+      this.push(pc)
     }
 
-    return newPc;
+    return newPc
   }
 
   ret(mode?: JumpMode) {
-    const address = this.readStack();
+    const address = this.readStack()
     const newPc = this.jp(address, mode)
 
     if (newPc !== undefined) {
-      this.cpu.registers.incStackPointer();
+      this.cpu.registers.incStackPointer()
     }
 
-    return newPc;
+    return newPc
   }
 
   scf() {
@@ -682,12 +682,12 @@ export class Instructions {
   }
 
   reti() {
-    this.ret();
-    this.ei();
+    this.ret()
+    this.ei()
   }
 
   rst(offset: Uint8Array | number) {
-    const value = uInt8ArrayToNumber(offset);
+    const value = uInt8ArrayToNumber(offset)
     this.push(this.cpu.registers.get('pc'))
     return this.jp(value)
   }
