@@ -19,4 +19,20 @@ export class Graphics {
 
     this.cpu.memory.writeByte(IO_REGISTERS.ly, ly)
   }
+
+  getTileData(tileIndex: number) {
+    return this.cpu.memory.readBytes(0x8000 + (tileIndex * 16), 16);
+  }
+
+  tileToColorData(tile: Uint8Array) {
+    const result: number[][] = [];
+    for (let row = 0; row < 8; row += 1) {
+      result.push([]);
+
+      const left = tile[row];
+      const right = tile[row + 1]
+
+      console.log(left, right);
+    }
+  }
 }

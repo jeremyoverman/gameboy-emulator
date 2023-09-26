@@ -1,0 +1,9 @@
+import { CPU } from "./cpu"
+
+test('Reading raw tile data', () => {
+  const cpu = new CPU(() => {})
+  const tile = new Uint8Array([0x3C, 0x7E, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x7E, 0x5E, 0x7E, 0x0A, 0x7C, 0x56, 0x38, 0x7C])
+  cpu.memory.writeBytes(0x8000, tile)
+
+  expect(cpu.graphics.getTileData(0)).toEqual(tile)
+})
