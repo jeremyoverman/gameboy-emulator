@@ -1,4 +1,4 @@
-import { Emitter } from '.'
+import { Emitter, EventMap } from '.'
 import { Graphics } from './graphics'
 import { Instructions } from './instructions'
 import { INTERRUPTS, INTERRUPT_PRIORITY, Interrupt, Memory } from './memory'
@@ -43,13 +43,13 @@ export class CPU {
   interrupMasterEnabled: boolean = true
   interruptEnable: boolean = false
 
-  constructor(emit: Emitter<keyof CPUEventMap>) {
+  constructor(emit: Emitter<keyof EventMap>) {
     this.emit = emit
     this.instructions = new Instructions(this)
     this.opcodes = new OpCodes(this)
     this.registers = new Registers()
     this.memory = new Memory()
-    this.graphics = new Graphics(this)
+    this.graphics = new Graphics(this, emit)
 
     this.setCyclesPerFrame()
   }
@@ -89,6 +89,7 @@ export class CPU {
         this.memory.setInterruptFlag('vblank', true)
         this.executeFrame()
         this.emit('vblank')
+        this.graphics.render()
       } catch (e) {
         console.error(e)
         this.pause()
@@ -129,7 +130,7 @@ export class CPU {
 
     if (this.scanlineCycles >= 456) {
       this.scanlineCycles -= 456
-      this.graphics.renderScanline()
+      this.graphics.incrementScanline()
     }
 
     let opcode: OpCodeDefinition

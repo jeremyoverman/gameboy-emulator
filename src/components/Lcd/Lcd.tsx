@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
+import { useEmulator } from '../../hooks/useEmulator';
 
 const LcdContainer = styled.div<{ $width: number, $height: number }>`
   width: ${(props) => props.$width}px;
@@ -7,38 +8,38 @@ const LcdContainer = styled.div<{ $width: number, $height: number }>`
 `
 
 const LcdCanvas = styled.canvas`
-  width: 100%;
-  height: 100%;
+  border: 1px solid black;
 `
 
 const Lcd = ({
   className,
-  scale = 1,
 }: {
   className?: string;
-  scale: number;
 }) => {
+  const [width, setWidth] = useState(144);
+  const [height, setHeight] = useState(160);
+  const [ctx, setCtx] = useState<CanvasRenderingContext2D>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const width = 144 * scale;
-  const height = 160 * scale;
+  const { lcd } = useEmulator();
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const canvasContext = canvas?.getContext('2d')
+    if (!canvasContext) return;
+    setCtx(canvasContext);
+    setWidth(lcd.width)
+    setHeight(lcd.height)
+  }, [lcd.width, lcd.height]);
 
-    const gl = canvas.getContext('webgl');
-    if (!gl) return;
-
-    // const pixels = new Uint8Array(width * height * 4);
-
-    gl.clearColor(0, 0, 0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-  }, []);
+  useEffect(() => {
+    if (!ctx) return;
+    ctx.putImageData(lcd.data, 0, 0);
+  }, [ctx, lcd])
 
   return (
     <LcdContainer className={className} $width={width} $height={height}>
-      <LcdCanvas ref={canvasRef} id='lcd'></LcdCanvas>
+      <LcdCanvas width={width} height={height} ref={canvasRef} id='lcd'></LcdCanvas>
     </LcdContainer>
   )
 }
