@@ -16,8 +16,8 @@ const Lcd = ({
 }: {
   className?: string;
 }) => {
-  const [width, setWidth] = useState(144);
-  const [height, setHeight] = useState(160);
+  const [width, setWidth] = useState(144 * 4);
+  const [height, setHeight] = useState(160 * 4);
   const [ctx, setCtx] = useState<CanvasRenderingContext2D>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 

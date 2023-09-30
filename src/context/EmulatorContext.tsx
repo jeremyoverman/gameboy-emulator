@@ -18,9 +18,9 @@ export const EmulatorContext = createContext<EmulatorContextType>({
   paused: true,
   vblankCounter: 0,
   lcd: {
-    data: new Uint8ClampedArray(144 * 160 * 4),
-    width: 144,
-    height: 160,
+    data: new Uint8ClampedArray(144 * 160 * 4 * 4 * 4),
+    width: 160 * 4,
+    height: 144 * 4,
   },
 });
 
@@ -28,9 +28,9 @@ export const EmulatorProvider = ({
   children
 }: { children: React.ReactNode }) => {
   const [lcd, setLcd] = React.useState<LCD>({
-    data: new Uint8ClampedArray(144 * 160 * 4),
-    width: 144,
-    height: 160,
+    data: new Uint8ClampedArray(144 * 160 * 4 * 4 * 4),
+    width: 160 * 4,
+    height: 144 * 4,
   });
   const [emulator, setEmulator] = React.useState<Emulator>();
   const [paused, setPaused] = React.useState(true);
@@ -39,7 +39,7 @@ export const EmulatorProvider = ({
   useEffect(() => {
     if (!emulator) {
       const emulatorInst = new Emulator();
-      emulatorInst.bootstrapWithoutRom();
+      // emulatorInst.bootstrapWithoutRom();
       setEmulator(emulatorInst);
     }
 

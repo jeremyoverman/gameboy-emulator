@@ -92,8 +92,7 @@ export class CPU {
         this.graphics.render()
       } catch (e) {
         console.log('error executing frame', this.registers.get('pc').toString(16))
-        console.log(this.memory.readByte(0xff50))
-        // this.pause()
+        this.pause()
       }
     }, 1000 / this.targetFps)
   }
