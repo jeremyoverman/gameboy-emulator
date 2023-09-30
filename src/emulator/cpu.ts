@@ -1,76 +1,76 @@
-import { Emitter } from ".";
-import { Graphics } from "./graphics";
-import { Instructions } from "./instructions";
-import { INTERRUPTS, INTERRUPT_PRIORITY, Interrupt, Memory } from "./memory";
-import { OpCodeDefinition, OpCodes } from "./opcodes";
-import { Registers } from "./registers";
+import { Emitter, EventMap } from '.'
+import { Graphics } from './graphics'
+import { Instructions } from './instructions'
+import { INTERRUPTS, INTERRUPT_PRIORITY, Interrupt, Memory } from './memory'
+import { OpCodeDefinition, OpCodes } from './opcodes'
+import { Registers } from './registers'
 
 export type CPUEventMap = {
-  vblank: () => void;
-  pause: () => void;
-  resume: () => void;
+  vblank: () => void
+  pause: () => void
+  resume: () => void
 }
 
 export class CPU {
   // Emulator
-  emit: Emitter<keyof CPUEventMap>;
-  paused: boolean = true;
+  emit: Emitter<keyof CPUEventMap>
+  paused: boolean = true
 
   // Targets
-  targetFps: number = 60;
-  targetCyclesPerSecond: number = 4194304;
-  targetCyclesPerFrame: number = 0;
+  targetFps: number = 60
+  targetCyclesPerSecond: number = 4194304
+  targetCyclesPerFrame: number = 0
 
   // Intervals
-  vblankClockInterval: NodeJS.Timeout | undefined;
+  vblankClockInterval: NodeJS.Timeout | undefined
 
   // Components
-  graphics: Graphics;
-  registers: Registers;
-  instructions: Instructions;
-  memory: Memory;
-  opcodes: OpCodes;
+  graphics: Graphics
+  registers: Registers
+  instructions: Instructions
+  memory: Memory
+  opcodes: OpCodes
 
   // Counters
-  cycles: number = 0;
-  scanlineCycles: number = 0;
+  cycles: number = 0
+  scanlineCycles: number = 0
 
   // CPU Control flags
-  halted: boolean = false;
-  stopped: boolean = false;
+  halted: boolean = false
+  stopped: boolean = false
 
   // Interrupt flags
-  interrupMasterEnabled: boolean = true;
-  interruptEnable: boolean = false;
+  interrupMasterEnabled: boolean = true
+  interruptEnable: boolean = false
 
-  constructor(emit: Emitter<keyof CPUEventMap>) {
-    this.emit = emit;
-    this.instructions = new Instructions(this);
-    this.opcodes = new OpCodes(this);
-    this.registers = new Registers();
-    this.memory = new Memory();
-    this.graphics = new Graphics(this);
+  constructor(emit: Emitter<keyof EventMap>) {
+    this.emit = emit
+    this.instructions = new Instructions(this)
+    this.opcodes = new OpCodes(this)
+    this.registers = new Registers()
+    this.memory = new Memory()
+    this.graphics = new Graphics(this, emit)
 
-    this.setCyclesPerFrame();
+    this.setCyclesPerFrame()
   }
 
   interrupt(interrupt: Interrupt) {
-    this.memory.setInterruptFlag(interrupt, true);
+    this.memory.setInterruptFlag(interrupt, true)
   }
 
   private addCycles(cycles: number) {
-    this.cycles += cycles;
-    this.scanlineCycles += cycles;
+    this.cycles += cycles
+    this.scanlineCycles += cycles
   }
 
   private setCyclesPerFrame() {
-    this.targetCyclesPerFrame = this.targetCyclesPerSecond / this.targetFps;
+    this.targetCyclesPerFrame = this.targetCyclesPerSecond / this.targetFps
   }
 
   pause() {
     if (this.vblankClockInterval) {
       clearInterval(this.vblankClockInterval)
-      this.paused = true;
+      this.paused = true
       this.emit('pause')
     } else {
       throw new Error('No vblank clock interval to pause!')
@@ -78,91 +78,104 @@ export class CPU {
   }
 
   resume() {
-    this.vblankClock();
-    this.paused = false;
+    this.vblankClock()
+    this.paused = false
     this.emit('resume')
   }
 
   vblankClock() {
     this.vblankClockInterval = setInterval(() => {
       try {
-        this.memory.setInterruptFlag('vblank', true);
-        this.executeFrame();
-        this.emit('vblank');
+        this.memory.setInterruptFlag('vblank', true)
+        this.executeFrame()
+        this.emit('vblank')
+        this.graphics.render()
       } catch (e) {
-        console.error(e);
-        this.pause();
+        console.log('error executing frame', this.registers.get('pc').toString(16))
+        this.pause()
       }
-    }, 1000 / this.targetFps);
+    }, 1000 / this.targetFps)
   }
 
   executeFrame() {
-    this.cycles = 0;
+    this.cycles = 0
     while (this.cycles < this.targetCyclesPerFrame) {
       if (this.paused) {
-        break;
+        break
       }
-      this.step();
+      this.step()
     }
   }
 
   handleInterrupt() {
     if (!this.interrupMasterEnabled) {
-      return;
+      return
     }
 
-    let jumpAddress: number | undefined;
+    let jumpAddress: number | undefined
 
     INTERRUPT_PRIORITY.some((interrupt) => {
       if (this.memory.getInterruptFlag(interrupt)) {
-        this.memory.setInterruptFlag(interrupt, false);
-        jumpAddress = INTERRUPTS[interrupt].jump;
-        return true;
+        this.memory.setInterruptFlag(interrupt, false)
+        jumpAddress = INTERRUPTS[interrupt].jump
+        return true
       }
-    });
+    })
 
     return jumpAddress
   }
 
   step() {
-    const pc = this.registers.get('pc');
+    const pc = this.registers.get('pc')
 
     if (this.scanlineCycles >= 456) {
-      this.scanlineCycles -= 456;
-      this.graphics.renderScanline();
+      this.scanlineCycles -= 456
+      this.graphics.incrementScanline()
     }
 
-    let opcode: OpCodeDefinition;
-    let args = new Uint8Array(0);
+    let opcode: OpCodeDefinition
+    let args = new Uint8Array(0)
 
-    let instructionByte = this.memory.readByte(pc);
-    const interruptJumpAddress = this.handleInterrupt();
+    let instructionByte = this.memory.readByte(pc)
+    const interruptJumpAddress = this.handleInterrupt()
 
     if (interruptJumpAddress !== undefined) {
-      instructionByte = 0xcd; // CALL a16
-      opcode = this.opcodes.opcodes[instructionByte];
+      instructionByte = 0xcd // CALL a16
+      opcode = this.opcodes.opcodes[instructionByte]
       args = new Uint8Array([interruptJumpAddress & 0xff, (interruptJumpAddress >> 8) & 0xff])
     } else if (instructionByte === 0xcb) {
-      instructionByte = this.memory.readByte(pc + 1);
-      opcode = this.opcodes.prefixOpcodes[instructionByte];
+      instructionByte = this.memory.readByte((pc + 1) & 0xffff)
+      opcode = this.opcodes.prefixOpcodes[instructionByte]
     } else {
-      opcode = this.opcodes.opcodes[instructionByte];
-      const bytes = opcode?.length !== undefined ? opcode.length : 1;
-      args = this.memory.readBytes(pc + 1, bytes - 1)
+      opcode = this.opcodes.opcodes[instructionByte]
+      const bytes = opcode?.length !== undefined ? opcode.length : 1
+      // TODO: This won't handle wrapping
+      args = this.memory.readBytes((pc + 1) & 0xffff, bytes - 1)
     }
 
     if (!opcode) {
-      throw new Error(`${instructionByte} not implemented!`);
+      throw new Error(`Unknown opcode ${instructionByte.toString(16)} at ${pc.toString(16)}`)
     }
 
     if (interruptJumpAddress === undefined) {
-      this.registers.set('pc', pc + opcode.length);
-    } else {
-      // The CALL instruction will push PC + 1 to the stack, so we need to
-      // subtract 1 from the PC to get the correct value.
-      this.registers.set('pc', pc - 1);
+      this.registers.set('pc', pc + opcode.length)
     }
-    const result = opcode.run(pc, args);
+
+    let result: number | void
+    const originalPc = pc
+
+    try {
+      result = opcode.run(pc, args)
+    } catch (e) {
+      console.error(
+        'Failed running opcode',
+        originalPc.toString(16),
+        opcode,
+        [...args].map((v) => v.toString(16)),
+        e
+      )
+      throw e
+    }
 
     if (Array.isArray(opcode.cycles)) {
       // If the instruction took a branch, we need to add the
@@ -179,22 +192,22 @@ export class CPU {
   }
 
   halt() {
-    this.halted = true;
+    this.halted = true
   }
 
   isHalted() {
-    return this.halted;
+    return this.halted
   }
 
   stop() {
-    this.stopped = true;
+    this.stopped = true
   }
 
   isStopped() {
-    return this.stopped;
+    return this.stopped
   }
 
   setIME(enabled: boolean) {
-    this.interrupMasterEnabled = enabled;
+    this.interrupMasterEnabled = enabled
   }
 }

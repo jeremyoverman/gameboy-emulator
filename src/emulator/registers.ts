@@ -24,18 +24,13 @@ export const REGISTERS = [
 export type RegisterName = (typeof REGISTERS)[number]
 export type SpecialRegisterNames = (typeof SPECIAL_8_BIT_REGISTERS)[number]
 
-export enum Flag {
-  Zero = 'Zero',
-  Subtraction = 'Subtraction',
-  Carry = 'Carry',
-  HalfCarry = 'HalfCarry',
-}
+export type Flag = 'Zero' | 'Subtraction' | 'Carry' | 'HalfCarry'
 
 const FLAG_POSITIONS = {
-  [Flag.Zero]: 4,
-  [Flag.Subtraction]: 5,
-  [Flag.HalfCarry]: 6,
-  [Flag.Carry]: 7,
+  ['Zero']: 7,
+  ['Subtraction']: 6,
+  ['HalfCarry']: 5,
+  ['Carry']: 4,
 }
 
 export class Registers {
@@ -58,12 +53,20 @@ export class Registers {
   set(reg: RegisterName, value: number) {
     if (ALL_8_BIT_REGISTERS.includes(reg as EightBitRegisterName)) {
       if (value > 0xff) {
-        throw new Error(`Cannot set ${reg} to ${value}!`)
+        value = value & 0xff
+      }
+
+      if (reg === 'f') {
+        value = value & 0xf0
       }
 
       this[reg as GpEightBitRegisterName] = value
     } else {
       if (SPECIAL_16_BIT_REGISTERS.includes(reg as SpecialSixteenBitRegisterName)) {
+        if (value > 0xffff) {
+          value = value & 0xffff
+        }
+
         this[reg as SpecialRegisterNames] = value
       } else {
         const [reg1, reg2] = reg.split('') as GpEightBitRegisterName[]
@@ -119,22 +122,34 @@ export class Registers {
 
   getAll() {
     return {
-      a: this.a,
-      b: this.b,
-      c: this.c,
-      d: this.d,
-      e: this.e,
-      f: this.f,
-      h: this.h,
-      l: this.l,
+      a: this.get('a'),
+      b: this.get('b'),
+      c: this.get('c'),
+      d: this.get('d'),
+      e: this.get('e'),
+      f: this.get('f'),
+      h: this.get('h'),
+      l: this.get('l'),
+      af: this.get('af'),
+      bc: this.get('bc'),
+      de: this.get('de'),
+      hl: this.get('hl'),
+      sp: this.get('sp'),
+      pc: this.get('pc'),
+      flags: {
+        Zero: this.getFlag('Zero'),
+        Subtraction: this.getFlag('Subtraction'),
+        HalfCarry: this.getFlag('HalfCarry'),
+        Carry: this.getFlag('Carry'),
+      },
     }
   }
 
   incStackPointer() {
-    this.set('sp', this.get('sp') + 2);
+    this.set('sp', this.get('sp') + 2)
   }
 
   decStackPointer() {
-    this.set('sp', this.get('sp') - 2);
+    this.set('sp', this.get('sp') - 2)
   }
 }

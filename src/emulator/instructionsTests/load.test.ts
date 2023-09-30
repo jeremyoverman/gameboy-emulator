@@ -2,6 +2,7 @@ import { CPU } from '../cpu'
 
 test('0x02: LD (BC),A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('bc', 0x1000)
@@ -14,6 +15,7 @@ test('0x02: LD (BC),A', () => {
 })
 test('0x06: LD B,d8', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeBytes(0x0000, [0x06, 0xaa]) // LD B,d8
@@ -24,6 +26,7 @@ test('0x06: LD B,d8', () => {
 })
 test('0x08: LD (a16),SP', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('sp', 0xaabb)
@@ -36,6 +39,7 @@ test('0x08: LD (a16),SP', () => {
 })
 test('0x0a: LD A,(BC)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('bc', 0x1000)
@@ -48,6 +52,7 @@ test('0x0a: LD A,(BC)', () => {
 })
 test('0x0e: LD C,d8', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeBytes(0x0000, [0x0e, 0xaa]) // LD C,d8
@@ -58,6 +63,7 @@ test('0x0e: LD C,d8', () => {
 })
 test('0x11: LD DE,d16', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeBytes(0x0000, [0x11, 0xbb, 0xaa]) // LD DE,d16
@@ -68,6 +74,7 @@ test('0x11: LD DE,d16', () => {
 })
 test('0x12: LD (DE),A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('de', 0x1000)
@@ -80,6 +87,7 @@ test('0x12: LD (DE),A', () => {
 })
 test('0x16: LD D,d8', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeBytes(0x0000, [0x16, 0xaa]) // LD D,d8
@@ -90,6 +98,7 @@ test('0x16: LD D,d8', () => {
 })
 test('0x1a: LD A,(DE)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('de', 0x1000)
@@ -102,6 +111,7 @@ test('0x1a: LD A,(DE)', () => {
 })
 test('0x1e: LD E,d8', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeBytes(0x0000, [0x1e, 0xaa]) // LD E,d8
@@ -112,6 +122,7 @@ test('0x1e: LD E,d8', () => {
 })
 test('0x21: LD HL,d16', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeBytes(0x0000, [0x21, 0xbb, 0xaa]) // LD HL,d16
@@ -122,6 +133,7 @@ test('0x21: LD HL,d16', () => {
 })
 test('0x22: LD (HL+),A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -135,6 +147,7 @@ test('0x22: LD (HL+),A', () => {
 })
 test('0x26: LD H,d8', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeBytes(0x0000, [0x26, 0xaa]) // LD H,d8
@@ -145,6 +158,7 @@ test('0x26: LD H,d8', () => {
 })
 test('0x2a: LD A,(HL+)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -158,6 +172,7 @@ test('0x2a: LD A,(HL+)', () => {
 })
 test('0x2e: LD L,d8', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeBytes(0x0000, [0x2e, 0xaa]) // LD L,d8
@@ -168,6 +183,7 @@ test('0x2e: LD L,d8', () => {
 })
 test('0x31: LD SP,d16', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeBytes(0x0000, [0x31, 0xbb, 0xaa]) // LD SP,d16
@@ -178,6 +194,7 @@ test('0x31: LD SP,d16', () => {
 })
 test('0x32: LD (HL-),A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -191,6 +208,7 @@ test('0x32: LD (HL-),A', () => {
 })
 test('0x36: LD (HL),d8', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -202,6 +220,7 @@ test('0x36: LD (HL),d8', () => {
 })
 test('0x3a: LD A,(HL-)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -215,6 +234,7 @@ test('0x3a: LD A,(HL-)', () => {
 })
 test('0x3e: LD A,d8', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeBytes(0x0000, [0x3e, 0xaa]) // LD A,d8
@@ -225,6 +245,7 @@ test('0x3e: LD A,d8', () => {
 })
 test('0x40: LD B,B', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('b', 0xaa)
@@ -236,6 +257,7 @@ test('0x40: LD B,B', () => {
 })
 test('0x41: LD B,C', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('c', 0xaa)
@@ -247,6 +269,7 @@ test('0x41: LD B,C', () => {
 })
 test('0x42: LD B,D', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('d', 0xaa)
@@ -258,6 +281,7 @@ test('0x42: LD B,D', () => {
 })
 test('0x43: LD B,E', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('e', 0xaa)
@@ -269,6 +293,7 @@ test('0x43: LD B,E', () => {
 })
 test('0x44: LD B,H', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('h', 0xaa)
@@ -280,6 +305,7 @@ test('0x44: LD B,H', () => {
 })
 test('0x45: LD B,L', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('l', 0xaa)
@@ -291,6 +317,7 @@ test('0x45: LD B,L', () => {
 })
 test('0x46: LD B,(HL)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -303,6 +330,7 @@ test('0x46: LD B,(HL)', () => {
 })
 test('0x47: LD B,A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0xaa)
@@ -314,6 +342,7 @@ test('0x47: LD B,A', () => {
 })
 test('0x48: LD C,B', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('b', 0xaa)
@@ -325,6 +354,7 @@ test('0x48: LD C,B', () => {
 })
 test('0x49: LD C,C', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('c', 0xaa)
@@ -336,6 +366,7 @@ test('0x49: LD C,C', () => {
 })
 test('0x4a: LD C,D', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('d', 0xaa)
@@ -347,6 +378,7 @@ test('0x4a: LD C,D', () => {
 })
 test('0x4b: LD C,E', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('e', 0xaa)
@@ -358,6 +390,7 @@ test('0x4b: LD C,E', () => {
 })
 test('0x4c: LD C,H', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('h', 0xaa)
@@ -369,6 +402,7 @@ test('0x4c: LD C,H', () => {
 })
 test('0x4d: LD C,L', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('l', 0xaa)
@@ -380,6 +414,7 @@ test('0x4d: LD C,L', () => {
 })
 test('0x4e: LD C,(HL)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -392,6 +427,7 @@ test('0x4e: LD C,(HL)', () => {
 })
 test('0x4f: LD C,A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0xaa)
@@ -403,6 +439,7 @@ test('0x4f: LD C,A', () => {
 })
 test('0x50: LD D,B', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('b', 0xaa)
@@ -414,6 +451,7 @@ test('0x50: LD D,B', () => {
 })
 test('0x51: LD D,C', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('c', 0xaa)
@@ -425,6 +463,7 @@ test('0x51: LD D,C', () => {
 })
 test('0x52: LD D,D', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('d', 0xaa)
@@ -436,6 +475,7 @@ test('0x52: LD D,D', () => {
 })
 test('0x53: LD D,E', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('e', 0xaa)
@@ -447,6 +487,7 @@ test('0x53: LD D,E', () => {
 })
 test('0x54: LD D,H', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('h', 0xaa)
@@ -458,6 +499,7 @@ test('0x54: LD D,H', () => {
 })
 test('0x55: LD D,L', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('l', 0xaa)
@@ -469,6 +511,7 @@ test('0x55: LD D,L', () => {
 })
 test('0x56: LD D,(HL)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -481,6 +524,7 @@ test('0x56: LD D,(HL)', () => {
 })
 test('0x57: LD D,A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0xaa)
@@ -492,6 +536,7 @@ test('0x57: LD D,A', () => {
 })
 test('0x58: LD E,B', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('b', 0xaa)
@@ -503,6 +548,7 @@ test('0x58: LD E,B', () => {
 })
 test('0x59: LD E,C', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('c', 0xaa)
@@ -514,6 +560,7 @@ test('0x59: LD E,C', () => {
 })
 test('0x5a: LD E,D', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('d', 0xaa)
@@ -525,6 +572,7 @@ test('0x5a: LD E,D', () => {
 })
 test('0x5b: LD E,E', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('e', 0xaa)
@@ -536,6 +584,7 @@ test('0x5b: LD E,E', () => {
 })
 test('0x5c: LD E,H', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('h', 0xaa)
@@ -547,6 +596,7 @@ test('0x5c: LD E,H', () => {
 })
 test('0x5d: LD E,L', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('l', 0xaa)
@@ -558,6 +608,7 @@ test('0x5d: LD E,L', () => {
 })
 test('0x5e: LD E,(HL)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -570,6 +621,7 @@ test('0x5e: LD E,(HL)', () => {
 })
 test('0x5f: LD E,A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0xaa)
@@ -581,6 +633,7 @@ test('0x5f: LD E,A', () => {
 })
 test('0x60: LD H,B', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('b', 0xaa)
@@ -592,6 +645,7 @@ test('0x60: LD H,B', () => {
 })
 test('0x61: LD H,C', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('c', 0xaa)
@@ -603,6 +657,7 @@ test('0x61: LD H,C', () => {
 })
 test('0x62: LD H,D', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('d', 0xaa)
@@ -614,6 +669,7 @@ test('0x62: LD H,D', () => {
 })
 test('0x63: LD H,E', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('e', 0xaa)
@@ -625,6 +681,7 @@ test('0x63: LD H,E', () => {
 })
 test('0x64: LD H,H', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('h', 0xaa)
@@ -636,6 +693,7 @@ test('0x64: LD H,H', () => {
 })
 test('0x65: LD H,L', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('l', 0xaa)
@@ -647,6 +705,7 @@ test('0x65: LD H,L', () => {
 })
 test('0x66: LD H,(HL)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -659,6 +718,7 @@ test('0x66: LD H,(HL)', () => {
 })
 test('0x67: LD H,A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0xaa)
@@ -670,6 +730,7 @@ test('0x67: LD H,A', () => {
 })
 test('0x68: LD L,B', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('b', 0xaa)
@@ -681,6 +742,7 @@ test('0x68: LD L,B', () => {
 })
 test('0x69: LD L,C', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('c', 0xaa)
@@ -692,6 +754,7 @@ test('0x69: LD L,C', () => {
 })
 test('0x6a: LD L,D', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('d', 0xaa)
@@ -703,6 +766,7 @@ test('0x6a: LD L,D', () => {
 })
 test('0x6b: LD L,E', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('e', 0xaa)
@@ -714,6 +778,7 @@ test('0x6b: LD L,E', () => {
 })
 test('0x6c: LD L,H', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('h', 0xaa)
@@ -725,6 +790,7 @@ test('0x6c: LD L,H', () => {
 })
 test('0x6d: LD L,L', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('l', 0xaa)
@@ -736,6 +802,7 @@ test('0x6d: LD L,L', () => {
 })
 test('0x6e: LD L,(HL)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -748,6 +815,7 @@ test('0x6e: LD L,(HL)', () => {
 })
 test('0x6f: LD L,A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0xaa)
@@ -759,6 +827,7 @@ test('0x6f: LD L,A', () => {
 })
 test('0x70: LD (HL),B', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -771,6 +840,7 @@ test('0x70: LD (HL),B', () => {
 })
 test('0x71: LD (HL),C', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -783,6 +853,7 @@ test('0x71: LD (HL),C', () => {
 })
 test('0x72: LD (HL),D', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -795,6 +866,7 @@ test('0x72: LD (HL),D', () => {
 })
 test('0x73: LD (HL),E', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -807,6 +879,7 @@ test('0x73: LD (HL),E', () => {
 })
 test('0x74: LD (HL),H', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -819,6 +892,7 @@ test('0x74: LD (HL),H', () => {
 })
 test('0x75: LD (HL),L', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -831,6 +905,7 @@ test('0x75: LD (HL),L', () => {
 })
 test('0x77: LD (HL),A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -843,6 +918,7 @@ test('0x77: LD (HL),A', () => {
 })
 test('0x78: LD A,B', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('b', 0xaa)
@@ -854,6 +930,7 @@ test('0x78: LD A,B', () => {
 })
 test('0x79: LD A,C', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('c', 0xaa)
@@ -865,6 +942,7 @@ test('0x79: LD A,C', () => {
 })
 test('0x7a: LD A,D', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('d', 0xaa)
@@ -876,6 +954,7 @@ test('0x7a: LD A,D', () => {
 })
 test('0x7b: LD A,E', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('e', 0xaa)
@@ -887,6 +966,7 @@ test('0x7b: LD A,E', () => {
 })
 test('0x7c: LD A,H', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('h', 0xaa)
@@ -898,6 +978,7 @@ test('0x7c: LD A,H', () => {
 })
 test('0x7d: LD A,L', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('l', 0xaa)
@@ -909,6 +990,7 @@ test('0x7d: LD A,L', () => {
 })
 test('0x7e: LD A,(HL)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0x1000)
@@ -921,6 +1003,7 @@ test('0x7e: LD A,(HL)', () => {
 })
 test('0x7f: LD A,A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0xaa)
@@ -932,18 +1015,20 @@ test('0x7f: LD A,A', () => {
 })
 test('0xe2: LD (C),A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
-  cpu.registers.set('c', 0x01)
+  cpu.registers.set('c', 0x02)
   cpu.registers.set('a', 0xaa)
   cpu.memory.writeBytes(0x0000, [0xe2]) // LD (C),A
 
   cpu.step()
 
-  expect(cpu.memory.readByte(0xff01)).toBe(0xaa)
+  expect(cpu.memory.readByte(0xff02)).toBe(0xaa)
 })
 test('0xea: LD (a16),A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0xaa)
@@ -955,6 +1040,7 @@ test('0xea: LD (a16),A', () => {
 })
 test('0xf2: LD A,(C)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('c', 0x02)
@@ -967,6 +1053,7 @@ test('0xf2: LD A,(C)', () => {
 })
 xtest('0xf8: LD HL,SP+r8', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeBytes(0x0000, [0xf8]) // LD HL,SP+r8
@@ -977,6 +1064,7 @@ xtest('0xf8: LD HL,SP+r8', () => {
 })
 test('0xf9: LD SP,HL', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('hl', 0xaabb)
@@ -988,6 +1076,7 @@ test('0xf9: LD SP,HL', () => {
 })
 test('0xfa: LD A,(a16)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeByte(0x1000, 0xaa)
@@ -999,6 +1088,7 @@ test('0xfa: LD A,(a16)', () => {
 })
 test('0xf0: LDH A,(a8)', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeByte(0xff03, 0xaa)
@@ -1010,6 +1100,7 @@ test('0xf0: LDH A,(a8)', () => {
 })
 test('0xe0: LDH (a8),A', () => {
   const cpu = new CPU(() => {})
+  cpu.memory.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0xaa)

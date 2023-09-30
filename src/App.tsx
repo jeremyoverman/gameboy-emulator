@@ -41,7 +41,7 @@ function App() {
         <Filler />
         <Middle>
           <Toolbar />
-          <StyledLcd scale={3} />
+          <StyledLcd scale={1} />
         </Middle>
         <StyledSettingsPanel />
       </Container>
