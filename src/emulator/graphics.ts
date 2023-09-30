@@ -1,5 +1,5 @@
 import { Emitter } from '.'
-import { HEIGHT, IO_REGISTERS, TILE_WIDTH, WIDTH } from './constants'
+import { HEIGHT, BUS_REGISTERS, TILE_WIDTH, WIDTH } from './constants'
 import { CPU } from './cpu'
 import { ColorMap, PPUEventMap } from './types/graphics'
 import { convertTwosComplement } from './utils'
@@ -29,7 +29,7 @@ export class Graphics {
     this.emit = emit
 
     this.setScale(this.scale)
-    this.cpu.memory.writeByte(IO_REGISTERS.stat, 0b00000001)
+    this.cpu.memory.writeByte(BUS_REGISTERS.stat, 0b00000001)
   }
 
   setScale(scale: number) {
@@ -47,24 +47,41 @@ export class Graphics {
     }
 
     this.renderBackground()
+    this.renderObjects()
     this.scaleLcdBuffer()
     this.emit('render')
   }
 
   renderBackground() {
     const index = this.cpu.memory.getLcdFlag('bgTileMap') ? 0x9c00 : 0x9800
-    const tilemap = this.cpu.memory.readBytes(index, 32 * 32)
 
-    tilemap.forEach((tile, idx) => {
+    for (let idx = 0; idx < 32 * 32; idx += 1) {
       try {
-        const scx = this.cpu.memory.readByte(IO_REGISTERS.scx)
-        const scy = this.cpu.memory.readByte(IO_REGISTERS.scy)
+        const scx = this.cpu.memory.readByte(BUS_REGISTERS.scx)
+        const scy = this.cpu.memory.readByte(BUS_REGISTERS.scy)
+        const tile = this.cpu.memory.memory[index + idx]
 
         this.renderTile(tile, (idx % 32) * 8 - scx, Math.floor(idx / 32) * 8 - scy)
       } catch (e) {
         // console.log(e, idx)
       }
-    })
+    }
+  }
+
+  renderObjects() {
+    const index = BUS_REGISTERS.oam
+
+    for (let idx = 0; idx < 40; idx += 1) {
+      const y = this.cpu.memory.memory[index + idx * 4]
+      const x = this.cpu.memory.memory[index + idx * 4 + 1]
+      const tile = this.cpu.memory.memory[index + idx * 4 + 2]
+      const flags = this.cpu.memory.memory[index + idx * 4 + 3]
+
+      if (x && y) {
+        this.renderTile(tile, x - 8, y - 16)
+        // console.log(flags)
+      }
+    }
   }
 
   renderTile(tileIndex: number, x: number, y: number) {
@@ -118,7 +135,7 @@ export class Graphics {
   }
 
   incrementScanline() {
-    let ly = this.cpu.memory.readByte(IO_REGISTERS.ly) + 1
+    let ly = this.cpu.memory.readByte(BUS_REGISTERS.ly) + 1
 
     if (ly > 153) {
       ly = 0
@@ -126,7 +143,7 @@ export class Graphics {
       this.cpu.interrupt('vblank')
     }
 
-    this.cpu.memory.writeByte(IO_REGISTERS.ly, ly)
+    this.cpu.memory.writeByte(BUS_REGISTERS.ly, ly)
   }
 
   getTileData(tileIndex: number) {

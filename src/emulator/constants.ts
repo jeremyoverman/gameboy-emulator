@@ -32,10 +32,14 @@ export const INTERRUPTS = {
   joypad:  { jump: 0x0060, flag: 0b10000, },
 } as const
 
-export const IO_REGISTERS = {
+export const BUS_REGISTERS = {
+  oam:     0xfe00,
   joypad:  0xff00,
   serial:  [0xff01, 0xff02],
-  divider: 0xff04,
+  div:     0xff04,
+  tima:    0xff05,
+  tma:     0xff06,
+  tac:     0xff07,
   audio:   [0xff10, 0xff26],
   wave:    [0xff30, 0xff3f],
   lcdc:    0xff40,
@@ -44,21 +48,24 @@ export const IO_REGISTERS = {
   scx:     0xff43,
   ly:      0xff44,
   lcy:     0xff45,
+  dma:     0xff46,
   windowy: 0xff4a,
   windowx: 0xff4b,
   boot:    0xff50,
   bank:    [0xff51, 0xff55],
 }
 
+export const ACTION_BUTTON    = 0b00100000
+export const DIRECTION_BUTTON = 0b00010000
 export const BUTTONS = {
-  Right:  0x01,
-  Left:   0x02,
-  Down:   0x04,
-  Up:     0x08,
-  A:      0x01,
-  B:      0x02,
-  Select: 0x04,
-  Start:  0x08,
+  Right:  0b00000001,
+  Left:   0b00000010,
+  Up:     0b00000100,
+  Down:   0b00001000,
+  A:      0b00000001,
+  B:      0b00000010,
+  Select: 0b00000100,
+  Start:  0b00001000,
 }
 
 //
@@ -81,3 +88,24 @@ export const FLAGS = {
   HalfCarry:   0x20,
   Carry:       0x10,
 }
+
+//
+// Cycles
+//
+
+export const FPS = 60
+
+export const CYCLES_PER_SECOND   = 4194304
+export const CYCLES_PER_SCANLINE = 456
+export const CYCLES_PER_DIV      = CYCLES_PER_SECOND / 16384
+
+export const TIMER_FLAGS = {
+  enable: 0b100,
+}
+
+export const TMA = [
+  CYCLES_PER_SECOND / 1024,
+  CYCLES_PER_SECOND / 16,
+  CYCLES_PER_SECOND / 64,
+  CYCLES_PER_SECOND / 256,
+]

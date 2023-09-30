@@ -1,5 +1,15 @@
 import { Emitter, EventMap } from '.'
-import { INTERRUPTS, INTERRUPT_PRIORITY } from './constants'
+import {
+  CYCLES_PER_DIV,
+  CYCLES_PER_SCANLINE,
+  CYCLES_PER_SECOND,
+  FPS,
+  INTERRUPTS,
+  INTERRUPT_PRIORITY,
+  BUS_REGISTERS,
+  TIMER_FLAGS,
+  TMA,
+} from './constants'
 import { Graphics } from './graphics'
 import { Instructions } from './instructions'
 import { Memory } from './memory'
@@ -15,8 +25,8 @@ export class CPU {
   paused: boolean = true
 
   // Targets
-  targetFps: number = 60
-  targetCyclesPerSecond: number = 4194304
+  targetFps: number = FPS
+  targetCyclesPerSecond: number = CYCLES_PER_SECOND
   targetCyclesPerFrame: number = 0
 
   // Intervals
@@ -32,6 +42,8 @@ export class CPU {
   // Counters
   cycles: number = 0
   scanlineCycles: number = 0
+  divCycles: number = 0
+  timaCycles: number = 0
 
   // CPU Control flags
   halted: boolean = false
@@ -59,6 +71,8 @@ export class CPU {
   private addCycles(cycles: number) {
     this.cycles += cycles
     this.scanlineCycles += cycles
+    this.divCycles += cycles
+    this.timaCycles += cycles
   }
 
   private setCyclesPerFrame() {
@@ -89,7 +103,7 @@ export class CPU {
         this.emit('vblank')
         this.graphics.render()
       } catch (e) {
-        console.log('error executing frame', this.registers.get('pc').toString(16))
+        console.error('error executing at pc', this.registers.get('pc').toString(16), e)
         this.pause()
       }
     }, 1000 / this.targetFps)
@@ -123,14 +137,38 @@ export class CPU {
     return jumpAddress
   }
 
-  step() {
-    const pc = this.registers.get('pc')
-    this.memory.incDivider()
+  updateTimers() {
+    if (this.divCycles >= CYCLES_PER_DIV) {
+      this.divCycles -= CYCLES_PER_DIV
+      this.memory.div = (this.memory.div + 1) & 0xffff
+    }
 
-    if (this.scanlineCycles >= 456) {
-      this.scanlineCycles -= 456
+    const tac = this.memory.readByte(BUS_REGISTERS.tac)
+    if (tac !== 0) {
+      console.log(tac.toString(2).padStart(3, '0'))
+    }
+    if (tac & TIMER_FLAGS.enable) {
+      const cycles = tac & TMA[tac & 0b11]
+      if (this.timaCycles >= cycles) {
+        this.timaCycles -= cycles
+        this.memory.tima = this.memory.tima + 1
+
+        if (this.memory.tima > 0xff) {
+          this.memory.tima = this.memory.readByte(BUS_REGISTERS.tma)
+          this.interrupt('timer')
+        }
+      }
+    }
+
+    if (this.scanlineCycles >= CYCLES_PER_SCANLINE) {
+      this.scanlineCycles -= CYCLES_PER_SCANLINE
       this.graphics.incrementScanline()
     }
+  }
+
+  step() {
+    const pc = this.registers.get('pc')
+    this.updateTimers()
 
     let opcode: OpCodeDefinition
     let args = new Uint8Array(0)

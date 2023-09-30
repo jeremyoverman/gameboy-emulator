@@ -1,5 +1,6 @@
 import React, { createContext, useEffect } from "react";
 import { Emulator, EventMap } from '../emulator';
+import useFile from "../hooks/useFile";
 
 export type LCD = {
   data: Uint8ClampedArray;
@@ -12,9 +13,13 @@ interface EmulatorContextType {
   paused: boolean;
   vblankCounter: number;
   lcd: LCD;
+  useBootRom: boolean;
+  reset: () => void;
+  setUseBootRom: (enabled: boolean) => void;
 }
 
-export const EmulatorContext = createContext<EmulatorContextType>({
+const initialValue: EmulatorContextType = {
+  useBootRom: true,
   paused: true,
   vblankCounter: 0,
   lcd: {
@@ -22,25 +27,50 @@ export const EmulatorContext = createContext<EmulatorContextType>({
     width: 160 * 4,
     height: 144 * 4,
   },
-});
+  reset: () => { },
+  setUseBootRom: () => { },
+}
+
+export const EmulatorContext = createContext<EmulatorContextType>(initialValue);
 
 export const EmulatorProvider = ({
   children
 }: { children: React.ReactNode }) => {
-  const [lcd, setLcd] = React.useState<LCD>({
-    data: new Uint8ClampedArray(144 * 160 * 4 * 4 * 4),
-    width: 160 * 4,
-    height: 144 * 4,
-  });
+  const [lcd, setLcd] = React.useState<LCD>(initialValue.lcd);
   const [emulator, setEmulator] = React.useState<Emulator>();
-  const [paused, setPaused] = React.useState(true);
-  const [vblankCounter, setVblankCounter] = React.useState(0);
+  const [paused, setPaused] = React.useState(initialValue.paused);
+  const [vblankCounter, setVblankCounter] = React.useState(initialValue.vblankCounter);
+  const [useBootRom, setUseBootRom] = React.useState(initialValue.useBootRom);
+
+  const bootrom = useFile('bootrom');
+  const gamerom = useFile('gamerom');
+
+  const reset = () => {
+    setPaused(initialValue.paused);
+    setVblankCounter(initialValue.vblankCounter);
+    setLcd(initialValue.lcd)
+    setEmulator(undefined);
+  }
+
+  const loadRoms = () => {
+    if (bootrom?.file) {
+      emulator?.loadBootRom(bootrom.file);
+    }
+
+    if (gamerom?.file) {
+      emulator?.cpu.memory.loadRomFile(gamerom.file);
+    }
+  }
 
   useEffect(() => {
     if (!emulator) {
       const emulatorInst = new Emulator();
-      // emulatorInst.bootstrapWithoutRom();
+
+      if (!useBootRom) {
+        emulatorInst.bootstrapWithoutRom();
+      }
       setEmulator(emulatorInst);
+      loadRoms();
     }
 
     if (!emulator) {
@@ -96,7 +126,10 @@ export const EmulatorProvider = ({
       emulator,
       vblankCounter,
       paused,
-      lcd
+      lcd,
+      reset,
+      useBootRom,
+      setUseBootRom
     }}>
       {children}
     </EmulatorContext.Provider>
