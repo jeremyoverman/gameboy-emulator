@@ -34,7 +34,10 @@ const Lcd = ({
 
   useEffect(() => {
     if (!ctx) return;
-    ctx.putImageData(lcd.data, 0, 0);
+    if (lcd.data && lcd.width && lcd.height) {
+      const data = new ImageData(lcd.data, lcd.width, lcd.height);
+      ctx.putImageData(data, 0, 0);
+    }
   }, [ctx, lcd])
 
   return (

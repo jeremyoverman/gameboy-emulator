@@ -5,7 +5,7 @@ export const IO_REGISTERS = {
   audio: [0xff10, 0xff26],
   wave: [0xff30, 0xff3f],
   lcd: [0xff40, 0xff4b],
-  boot: [0xff50],
+  boot: 0xff50,
   bank: [0xff51, 0xff55],
   ly: 0xff44,
 }
@@ -43,6 +43,7 @@ export type Interrupt = keyof typeof INTERRUPTS
 
 export class Memory {
   memory: Uint8Array = new Uint8Array(0xffff + 1).map(() => 0x00)
+  bootRom: Uint8Array = new Uint8Array(0x100 + 1).map(() => 0x00)
 
   constructor() {
     this.writeByte(0xffff, 0x00)
@@ -51,22 +52,34 @@ export class Memory {
   async loadRomFile(file: File, boot?: boolean) {
     const buffer = await file.arrayBuffer()
     const rom = new Uint8Array(buffer)
-    const offset = boot ? 0x0000 : 0x0100
-    console.log('loading rom file', offset, rom)
 
-    this.loadROM(rom, offset)
+    this.loadROM(rom, boot)
   }
 
-  private loadROM(rom: Uint8Array, offset: number) {
-    this.memory.set(rom, offset)
+  private loadROM(rom: Uint8Array, boot?: boolean) {
+    if (boot) {
+      this.bootRom = rom
+    } else {
+      this.memory.set(rom, 0)
+    }
   }
 
   readByte(address: number): number {
+    if (this.memory[IO_REGISTERS.boot] === 0 && address < 0x100) {
+      return this.bootRom[address]
+    }
+
     return this.memory[address]
   }
 
   readBytes(address: number, num: number) {
-    return this.memory.slice(address, address + num)
+    if (this.memory[IO_REGISTERS.boot] === 0 && address < 0x100) {
+      const bootRomBytes = this.bootRom.slice(address, address + num);
+      const memoryBytes = this.memory.slice(address + num, address + num + (num - bootRomBytes.length));
+      return new Uint8Array([...bootRomBytes, ...memoryBytes]);
+    }
+
+    return this.memory.slice(address, address + num);
   }
 
   writeByte(address: number, value: number) {
@@ -74,7 +87,12 @@ export class Memory {
   }
 
   writeBytes(address: number, values: number[] | Uint8Array) {
-    this.memory.set(values, address)
+    try {
+      this.memory.set(values, address)
+    } catch (e) {
+      console.log('error writing bytes', address.toString(16), [...values].map((v) => v.toString(16)))
+      throw e
+    }
   }
 
   setInterruptFlag(flag: Interrupt, on: boolean) {

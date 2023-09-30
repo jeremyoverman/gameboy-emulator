@@ -1,5 +1,5 @@
 import { Instructions } from "../instructions";
-import { Flag } from "../registers";
+
 import { CPU } from "../cpu";
 
 test("oring two numbers", () => {
@@ -11,10 +11,10 @@ test("oring two numbers", () => {
   instructions.or("b");
 
   expect(cpu.registers.get("a")).toEqual(0b00000111);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
+  expect(cpu.registers.getFlag('Zero')).toEqual(false);
+  expect(cpu.registers.getFlag('HalfCarry')).toEqual(false);
+  expect(cpu.registers.getFlag('Subtraction')).toEqual(false);
 });
 
 test("oring two numbers directly", () => {
@@ -25,10 +25,10 @@ test("oring two numbers directly", () => {
   instructions.or(0b00000101);
 
   expect(cpu.registers.get("a")).toEqual(0b00000111);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
+  expect(cpu.registers.getFlag('Zero')).toEqual(false);
+  expect(cpu.registers.getFlag('HalfCarry')).toEqual(false);
+  expect(cpu.registers.getFlag('Subtraction')).toEqual(false);
 });
 
 test("oring two 16 bit numbers", () => {
@@ -40,10 +40,10 @@ test("oring two 16 bit numbers", () => {
   instructions.or("bc");
 
   expect(cpu.registers.get("hl")).toEqual(0b00000111_00000000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
+  expect(cpu.registers.getFlag('Zero')).toEqual(false);
+  expect(cpu.registers.getFlag('HalfCarry')).toEqual(false);
+  expect(cpu.registers.getFlag('Subtraction')).toEqual(false);
 });
 
 test("oring hl reference", () => {
@@ -56,8 +56,8 @@ test("oring hl reference", () => {
   instructions.or("hl", true);
 
   expect(cpu.registers.get("a")).toEqual(0b00000111);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.Zero)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.Subtraction)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
+  expect(cpu.registers.getFlag('Zero')).toEqual(false);
+  expect(cpu.registers.getFlag('HalfCarry')).toEqual(false);
+  expect(cpu.registers.getFlag('Subtraction')).toEqual(false);
 });

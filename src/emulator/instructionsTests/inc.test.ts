@@ -1,5 +1,5 @@
 import { Instructions } from "../instructions";
-import { Flag } from "../registers";
+
 import { CPU } from "../cpu";
 
 test("incrementing a register", () => {
@@ -20,7 +20,7 @@ test("incrementing a register with carry", () => {
   instructions.inc("b");
 
   expect(cpu.registers.get("b")).toEqual(0x00);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("incrementing a register with half carry", () => {
@@ -31,8 +31,8 @@ test("incrementing a register with half carry", () => {
   instructions.inc("b");
 
   expect(cpu.registers.get("b")).toEqual(0b0001_0000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
+  expect(cpu.registers.getFlag('HalfCarry')).toEqual(true);
 });
 
 test("incrementing a 16bit register", () => {

@@ -2,7 +2,7 @@ import React, { createContext, useEffect } from "react";
 import { Emulator, EventMap } from '../emulator';
 
 export type LCD = {
-  data: ImageData;
+  data: Uint8ClampedArray;
   width: number;
   height: number;
 }
@@ -18,7 +18,7 @@ export const EmulatorContext = createContext<EmulatorContextType>({
   paused: true,
   vblankCounter: 0,
   lcd: {
-    data: new ImageData(144, 160),
+    data: new Uint8ClampedArray(144 * 160 * 4),
     width: 144,
     height: 160,
   },
@@ -28,7 +28,7 @@ export const EmulatorProvider = ({
   children
 }: { children: React.ReactNode }) => {
   const [lcd, setLcd] = React.useState<LCD>({
-    data: new ImageData(144, 160),
+    data: new Uint8ClampedArray(144 * 160 * 4),
     width: 144,
     height: 160,
   });
@@ -38,7 +38,9 @@ export const EmulatorProvider = ({
 
   useEffect(() => {
     if (!emulator) {
-      setEmulator(new Emulator());
+      const emulatorInst = new Emulator();
+      // emulatorInst.bootstrapWithoutRom();
+      setEmulator(emulatorInst);
     }
 
     if (!emulator) {

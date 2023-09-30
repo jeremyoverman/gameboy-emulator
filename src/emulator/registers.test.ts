@@ -1,4 +1,4 @@
-import { Flag, Registers } from "./registers";
+import { Registers } from "./registers";
 
 test("Test setting a single register works", () => {
   const registers = new Registers();
@@ -22,21 +22,30 @@ test("Test setting a dual register works", () => {
   registers.set("af", 0xfffe);
 
   expect(registers.a).toEqual(0xff);
-  expect(registers.f).toEqual(0xfe);
+  expect(registers.f).toEqual(0xf0);
+});
+
+test("Test getting bc works", () => {
+  const registers = new Registers();
+
+  registers.set("bc", 0xfffe);
+
+  expect(registers.b).toEqual(0xff);
+  expect(registers.c).toEqual(0xf0);
 });
 
 test("Test getting a dual register works", () => {
   const registers = new Registers();
 
   const value = 0xfffe;
-  registers.set("af", value);
+  registers.set("hl", value);
 
-  expect(registers.get("af")).toEqual(value);
+  expect(registers.get("hl")).toEqual(value);
 });
 
 test("Test setting the Zero flag to True", () => {
   const registers = new Registers();
-  registers.setFlag(Flag.Zero, true);
+  registers.setFlag('Zero', true);
 
   expect(registers.f).toEqual(0b00010000);
 });
@@ -44,31 +53,31 @@ test("Test setting the Zero flag to True", () => {
 test("Test setting the Zero flag to False", () => {
   const registers = new Registers();
   registers.set("f", 0b01010000);
-  registers.setFlag(Flag.Zero, false);
+  registers.setFlag('Zero', false);
 
   expect(registers.f).toEqual(0b01000000);
 });
 
 test("Test getting the Zero flag", () => {
   const registers = new Registers();
-  registers.setFlag(Flag.Zero, true);
+  registers.setFlag('Zero', true);
 
-  expect(registers.getFlag(Flag.Zero)).toEqual(true);
+  expect(registers.getFlag('Zero')).toEqual(true);
 });
 
 test("Setting the half carry and subtraction flags", () => {
   const registers = new Registers();
-  registers.setFlag(Flag.HalfCarry, true);
-  registers.setFlag(Flag.Subtraction, true);
+  registers.setFlag('HalfCarry', true);
+  registers.setFlag('Subtraction', true);
 
   expect(registers.f).toEqual(0b01100000);
 });
 
 test("Getting the half carry and subtraction flags", () => {
   const registers = new Registers();
-  registers.setFlag(Flag.HalfCarry, true);
-  registers.setFlag(Flag.Subtraction, true);
+  registers.setFlag('HalfCarry', true);
+  registers.setFlag('Subtraction', true);
 
-  expect(registers.getFlag(Flag.HalfCarry)).toEqual(true);
-  expect(registers.getFlag(Flag.Subtraction)).toEqual(true);
+  expect(registers.getFlag('HalfCarry')).toEqual(true);
+  expect(registers.getFlag('Subtraction')).toEqual(true);
 });

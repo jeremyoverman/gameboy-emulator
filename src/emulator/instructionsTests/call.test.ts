@@ -1,5 +1,4 @@
 import { CPU } from '../cpu'
-import { Flag } from '../registers'
 
 const pc = 0x0100
 
@@ -25,7 +24,7 @@ const expectNoJump = (cpu: CPU) => {
 
 test('0xc4: CALL NZ,a16 - Z=1', () => {
   const cpu = new CPU(() => {})
-  cpu.registers.setFlag(Flag.Zero, true)
+  cpu.registers.setFlag('Zero', true)
 
   execute(cpu, 0xc4)
   expectNoJump(cpu)
@@ -33,7 +32,7 @@ test('0xc4: CALL NZ,a16 - Z=1', () => {
 
 test('0xc4: CALL NZ,a16 - Z=0', () => {
   const cpu = new CPU(() => {})
-  cpu.registers.setFlag(Flag.Zero, false)
+  cpu.registers.setFlag('Zero', false)
 
   execute(cpu, 0xc4)
   expectJump(cpu)
@@ -41,7 +40,7 @@ test('0xc4: CALL NZ,a16 - Z=0', () => {
 
 test('0xcc: CALL Z,a16 - Z=1', () => {
   const cpu = new CPU(() => {})
-  cpu.registers.setFlag(Flag.Zero, true)
+  cpu.registers.setFlag('Zero', true)
 
   execute(cpu, 0xcc)
   expectJump(cpu)
@@ -49,7 +48,7 @@ test('0xcc: CALL Z,a16 - Z=1', () => {
 
 test('0xcc: CALL Z,a16 - Z=0', () => {
   const cpu = new CPU(() => {})
-  cpu.registers.setFlag(Flag.Zero, false)
+  cpu.registers.setFlag('Zero', false)
 
   execute(cpu, 0xcc)
   expectNoJump(cpu)
@@ -64,7 +63,7 @@ test('0xcd: CALL a16', () => {
 
 test('0xd4: CALL NC,a16 - C=1', () => {
   const cpu = new CPU(() => {})
-  cpu.registers.setFlag(Flag.Carry, true)
+  cpu.registers.setFlag('Carry', true)
 
   execute(cpu, 0xd4)
   expectNoJump(cpu)
@@ -72,7 +71,7 @@ test('0xd4: CALL NC,a16 - C=1', () => {
 
 test('0xd4: CALL NC,a16 - C=0', () => {
   const cpu = new CPU(() => {})
-  cpu.registers.setFlag(Flag.Carry, false)
+  cpu.registers.setFlag('Carry', false)
 
   execute(cpu, 0xd4)
   expectJump(cpu)
@@ -80,7 +79,7 @@ test('0xd4: CALL NC,a16 - C=0', () => {
 
 test('0xdc: CALL C,a16 - C=1', () => {
   const cpu = new CPU(() => {})
-  cpu.registers.setFlag(Flag.Carry, true)
+  cpu.registers.setFlag('Carry', true)
 
   execute(cpu, 0xdc)
   expectJump(cpu)
@@ -88,7 +87,7 @@ test('0xdc: CALL C,a16 - C=1', () => {
 
 test('0xdc: CALL C,a16 - C=0', () => {
   const cpu = new CPU(() => {})
-  cpu.registers.setFlag(Flag.Carry, false)
+  cpu.registers.setFlag('Carry', false)
 
   execute(cpu, 0xdc)
   expectNoJump(cpu)
@@ -96,7 +95,7 @@ test('0xdc: CALL C,a16 - C=0', () => {
 
 test('0xdc: CALL C,a16 - C=0', () => {
   const cpu = new CPU(() => {})
-  cpu.registers.setFlag(Flag.Carry, false)
+  cpu.registers.setFlag('Carry', false)
 
   execute(cpu, 0xdc)
   expectNoJump(cpu)

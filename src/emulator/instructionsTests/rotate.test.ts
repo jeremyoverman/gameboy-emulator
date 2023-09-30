@@ -1,5 +1,5 @@
 import { CPU } from "../cpu";
-import { Flag } from "../registers";
+
 
 test("rlca with carry", () => {
   const cpu = new CPU(() => {});
@@ -8,7 +8,7 @@ test("rlca with carry", () => {
   cpu.instructions.rlca();
 
   expect(cpu.registers.get("a")).toEqual(0b11000001);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("rlca without carry", () => {
@@ -18,29 +18,29 @@ test("rlca without carry", () => {
   cpu.instructions.rlca();
 
   expect(cpu.registers.get("a")).toEqual(0b11100000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("rla with carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, true);
+  cpu.registers.setFlag('Carry', true);
   cpu.registers.set("a", 0b01110000);
   cpu.instructions.rla();
 
   expect(cpu.registers.get("a")).toEqual(0b11100001);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("rla without carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, false);
+  cpu.registers.setFlag('Carry', false);
   cpu.registers.set("a", 0b01110000);
   cpu.instructions.rla();
 
   expect(cpu.registers.get("a")).toEqual(0b11100000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("rrca with carry", () => {
@@ -50,29 +50,29 @@ test("rrca with carry", () => {
   cpu.instructions.rrca();
 
   expect(cpu.registers.get("a")).toEqual(0b10000011);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("rra with carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, true);
+  cpu.registers.setFlag('Carry', true);
   cpu.registers.set("a", 0b00000110);
   cpu.instructions.rra();
 
   expect(cpu.registers.get("a")).toEqual(0b10000011);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("rra without carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, false);
+  cpu.registers.setFlag('Carry', false);
   cpu.registers.set("a", 0b01110000);
   cpu.instructions.rra();
 
   expect(cpu.registers.get("a")).toEqual(0b00111000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("rlc with carry", () => {
@@ -82,7 +82,7 @@ test("rlc with carry", () => {
   cpu.instructions.rlc("b");
 
   expect(cpu.registers.get("b")).toEqual(0b11000001);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("rlc with carry on hl ref", () => {
@@ -93,7 +93,7 @@ test("rlc with carry on hl ref", () => {
   cpu.instructions.rlc("hl", true);
 
   expect(cpu.memory.readByte(0xff00)).toEqual(0b11000001);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("rlc without carry", () => {
@@ -103,29 +103,40 @@ test("rlc without carry", () => {
   cpu.instructions.rlc("b");
 
   expect(cpu.registers.get("b")).toEqual(0b11100000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("rl with carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, true);
+  cpu.registers.setFlag('Carry', true);
   cpu.registers.set("b", 0b01110000);
   cpu.instructions.rl("b");
 
   expect(cpu.registers.get("b")).toEqual(0b11100001);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("rl without carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, false);
+  cpu.registers.setFlag('Carry', false);
   cpu.registers.set("b", 0b01110000);
   cpu.instructions.rl("b");
 
   expect(cpu.registers.get("b")).toEqual(0b11100000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
+});
+
+test("rl without carry", () => {
+  const cpu = new CPU(() => {});
+
+  cpu.registers.setFlag('Carry', false);
+  cpu.registers.set("b", 0b11100000);
+  cpu.instructions.rl("b");
+
+  expect(cpu.registers.get("b")).toEqual(0b11000001);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("rrc with carry", () => {
@@ -135,7 +146,7 @@ test("rrc with carry", () => {
   cpu.instructions.rrc("b");
 
   expect(cpu.registers.get("b")).toEqual(0b10000011);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("rrc without carry", () => {
@@ -145,29 +156,29 @@ test("rrc without carry", () => {
   cpu.instructions.rrc("b");
 
   expect(cpu.registers.get("b")).toEqual(0b00111000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("rr with carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, true);
+  cpu.registers.setFlag('Carry', true);
   cpu.registers.set("b", 0b00000110);
   cpu.instructions.rr("b");
 
   expect(cpu.registers.get("b")).toEqual(0b10000011);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("rr without carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, false);
+  cpu.registers.setFlag('Carry', false);
   cpu.registers.set("b", 0b01110000);
   cpu.instructions.rr("b");
 
   expect(cpu.registers.get("b")).toEqual(0b00111000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("16bit rlc with carry", () => {
@@ -177,7 +188,7 @@ test("16bit rlc with carry", () => {
   cpu.instructions.rlc("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b11000000_00000001);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("16bit rlc without carry", () => {
@@ -187,29 +198,29 @@ test("16bit rlc without carry", () => {
   cpu.instructions.rlc("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b11100000_00000000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("16bit rl with carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, true);
+  cpu.registers.setFlag('Carry', true);
   cpu.registers.set("hl", 0b01110000_00000000);
   cpu.instructions.rl("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b11100000_00000001);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("16bit rl without carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, false);
+  cpu.registers.setFlag('Carry', false);
   cpu.registers.set("hl", 0b01110000_00000000);
   cpu.instructions.rl("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b11100000_00000000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("16bit rrc with carry", () => {
@@ -219,7 +230,7 @@ test("16bit rrc with carry", () => {
   cpu.instructions.rrc("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b10000000_00000011);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("16bit rrc without carry", () => {
@@ -229,40 +240,40 @@ test("16bit rrc without carry", () => {
   cpu.instructions.rrc("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b00111000_00000000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("16bit rr with carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, true);
+  cpu.registers.setFlag('Carry', true);
   cpu.registers.set("hl", 0b00000110_00000000);
   cpu.instructions.rr("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b10000011_00000000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("16bit rr without carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, false);
+  cpu.registers.setFlag('Carry', false);
   cpu.registers.set("hl", 0b01110000_00000000);
   cpu.instructions.rr("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b00111000_00000000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("sla with carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, true);
+  cpu.registers.setFlag('Carry', true);
   cpu.registers.set("b", 0b11100000);
   cpu.instructions.sla("b");
 
   expect(cpu.registers.get("b")).toEqual(0b11000000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("sla without carry", () => {
@@ -272,7 +283,7 @@ test("sla without carry", () => {
   cpu.instructions.sla("b");
 
   expect(cpu.registers.get("b")).toEqual(0b11100000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("sra with carry", () => {
@@ -282,7 +293,7 @@ test("sra with carry", () => {
   cpu.instructions.sra("b");
 
   expect(cpu.registers.get("b")).toEqual(0b00000011);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("sra without carry", () => {
@@ -292,7 +303,7 @@ test("sra without carry", () => {
   cpu.instructions.sra("b");
 
   expect(cpu.registers.get("b")).toEqual(0b00111000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("sra without carry and 1 msb", () => {
@@ -302,18 +313,18 @@ test("sra without carry and 1 msb", () => {
   cpu.instructions.sra("b");
 
   expect(cpu.registers.get("b")).toEqual(0b11110000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("16bit sla with carry", () => {
   const cpu = new CPU(() => {});
 
-  cpu.registers.setFlag(Flag.Carry, true);
+  cpu.registers.setFlag('Carry', true);
   cpu.registers.set("hl", 0b11100000_00000000);
   cpu.instructions.sla("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b11000000_00000000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("16bit sla without carry", () => {
@@ -323,7 +334,7 @@ test("16bit sla without carry", () => {
   cpu.instructions.sla("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b11100000_00000000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("16bit sra with carry", () => {
@@ -333,7 +344,7 @@ test("16bit sra with carry", () => {
   cpu.instructions.sra("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b00000000_00000011);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("16bit sra without carry", () => {
@@ -343,7 +354,7 @@ test("16bit sra without carry", () => {
   cpu.instructions.sra("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b00000000_00111000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("16bit sra without carry and 1 msb", () => {
@@ -353,7 +364,7 @@ test("16bit sra without carry and 1 msb", () => {
   cpu.instructions.sra("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b11000000_00111000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("srl with carry", () => {
@@ -363,7 +374,7 @@ test("srl with carry", () => {
   cpu.instructions.srl("b");
 
   expect(cpu.registers.get("b")).toEqual(0b00000011);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("srl without carry", () => {
@@ -373,7 +384,7 @@ test("srl without carry", () => {
   cpu.instructions.srl("b");
 
   expect(cpu.registers.get("b")).toEqual(0b00111000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("srl without carry and 1 msb", () => {
@@ -383,7 +394,7 @@ test("srl without carry and 1 msb", () => {
   cpu.instructions.srl("b");
 
   expect(cpu.registers.get("b")).toEqual(0b01110000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("16bit srl with carry", () => {
@@ -393,7 +404,7 @@ test("16bit srl with carry", () => {
   cpu.instructions.srl("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b00000000_00000011);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("16bit srl without carry", () => {
@@ -403,7 +414,7 @@ test("16bit srl without carry", () => {
   cpu.instructions.srl("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b00000000_00111000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("16bit srl without carry and 1 msb", () => {
@@ -413,7 +424,7 @@ test("16bit srl without carry and 1 msb", () => {
   cpu.instructions.srl("hl");
 
   expect(cpu.registers.get("hl")).toEqual(0b01000000_00111000);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
 });
 
 test("swap 8 bit register", () => {

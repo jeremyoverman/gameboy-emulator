@@ -1,5 +1,5 @@
 import { Instructions } from "../instructions";
-import { Flag } from "../registers";
+
 import { CPU } from "../cpu";
 
 test("decrementing a register", () => {
@@ -20,7 +20,7 @@ test("decrementing a register with carry", () => {
   instructions.dec("b");
 
   expect(cpu.registers.get("b")).toEqual(0xff);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(true);
 });
 
 test("decrementing a register with half carry", () => {
@@ -31,8 +31,8 @@ test("decrementing a register with half carry", () => {
   instructions.dec("b");
 
   expect(cpu.registers.get("b")).toEqual(0b0000_1111);
-  expect(cpu.registers.getFlag(Flag.Carry)).toEqual(false);
-  expect(cpu.registers.getFlag(Flag.HalfCarry)).toEqual(true);
+  expect(cpu.registers.getFlag('Carry')).toEqual(false);
+  expect(cpu.registers.getFlag('HalfCarry')).toEqual(true);
 });
 
 test("decrementing a 16bit register", () => {

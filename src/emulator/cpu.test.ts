@@ -4,6 +4,7 @@ import { INTERRUPTS } from './memory'
 test('Stepping an instruction', () => {
   const cpu = new CPU(() => {})
 
+  cpu.memory.writeByte(0xff50, 0x01)
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0b1010_0000)
   cpu.registers.set('b', 0b0000_1111)
@@ -17,6 +18,7 @@ test('Stepping an instruction', () => {
 test('Stepping 2-byte instruction', () => {
   const cpu = new CPU(() => {})
 
+  cpu.memory.writeByte(0xff50, 0x01)
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0x01)
   cpu.memory.writeByte(0x00, 0xc6) // ADD A, d8
@@ -30,6 +32,7 @@ test('Stepping 2-byte instruction', () => {
 test('Jumping', () => {
   const cpu = new CPU(() => {})
 
+  cpu.memory.writeByte(0xff50, 0x01)
   cpu.registers.set('pc', 0x0000)
   cpu.memory.writeBytes(
     0x0000,
@@ -43,6 +46,7 @@ test('Jumping', () => {
 test('Multiple bit operations', () => {
   const cpu = new CPU(() => {})
 
+  cpu.memory.writeByte(0xff50, 0x01)
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('b', 0x00)
   cpu.registers.set('c', 0x00)
@@ -68,6 +72,7 @@ test('Multiple bit operations', () => {
 test('Handling a vblank interrupt', () => {
   const cpu = new CPU(() => {})
 
+  cpu.memory.writeByte(0xff50, 0x01)
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('sp', 0xfffe)
   cpu.memory.writeBytes(0xbb00, [0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
