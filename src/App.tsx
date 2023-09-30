@@ -1,8 +1,7 @@
 import styled from "styled-components"
-import Lcd from "./components/Lcd/Lcd"
 import { EmulatorProvider } from "./context/EmulatorContext"
 import SettingsPanel from "./components/SettingsPanel"
-import Toolbar from "./components/Toolbar";
+import Emulator from "./components/Emulator";
 
 const Container = styled.div`
   display: flex;
@@ -23,9 +22,9 @@ const StyledSettingsPanel = styled(SettingsPanel)`
   flex: 1 1 auto;
 `;
 
-const StyledLcd = styled(Lcd)`
-  flex: 0 0 auto;
-`;
+// const StyledLcd = styled(Lcd)`
+//   flex: 0 0 auto;
+// `;
 
 const Middle = styled.div`
   display: flex;
@@ -34,14 +33,14 @@ const Middle = styled.div`
   flex: 0 0 auto;
 `;
 
+
 function App() {
   return (
     <EmulatorProvider>
       <Container>
         <Filler />
         <Middle>
-          <Toolbar />
-          <StyledLcd scale={1} />
+          <Emulator />
         </Middle>
         <StyledSettingsPanel />
       </Container>

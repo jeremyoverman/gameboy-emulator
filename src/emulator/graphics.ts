@@ -1,18 +1,8 @@
 import { Emitter } from '.'
+import { HEIGHT, IO_REGISTERS, TILE_WIDTH, WIDTH } from './constants'
 import { CPU } from './cpu'
-import { IO_REGISTERS } from './memory'
+import { ColorMap, PPUEventMap } from './types/graphics'
 import { convertTwosComplement } from './utils'
-
-type ColorMap = number[][]
-
-const WIDTH = 160
-const HEIGHT = 144
-const TILE_WIDTH = 8 * 4
-
-export type PPUEventMap = {
-  render: () => void
-  lcdBufferReady: () => void
-}
 
 export class Graphics {
   cpu: CPU

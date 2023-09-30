@@ -1,15 +1,13 @@
 import { Emitter, EventMap } from '.'
+import { INTERRUPTS, INTERRUPT_PRIORITY } from './constants'
 import { Graphics } from './graphics'
 import { Instructions } from './instructions'
-import { INTERRUPTS, INTERRUPT_PRIORITY, Interrupt, Memory } from './memory'
-import { OpCodeDefinition, OpCodes } from './opcodes'
+import { Memory } from './memory'
+import { OpCodes } from './opcodes'
 import { Registers } from './registers'
-
-export type CPUEventMap = {
-  vblank: () => void
-  pause: () => void
-  resume: () => void
-}
+import { OpCodeDefinition } from './types/cpu'
+import { CPUEventMap } from './types/events'
+import { Interrupt } from './types/memory'
 
 export class CPU {
   // Emulator
@@ -127,6 +125,7 @@ export class CPU {
 
   step() {
     const pc = this.registers.get('pc')
+    this.memory.incDivider()
 
     if (this.scanlineCycles >= 456) {
       this.scanlineCycles -= 456

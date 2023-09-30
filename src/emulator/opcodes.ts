@@ -1,15 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {CPU} from './cpu'
+import { CPU } from './cpu'
 import { JumpMode } from './instructions'
-
-export const opCodes = {} as const
-
-export type OpCodeDefinition = {
-  run: (pc: number, args: Uint8Array) => number | void
-  name: string
-  length: number
-  cycles: number | number[]
-} | null
+import { OpCodeDefinition } from './types/cpu'
 
 export class OpCodes {
   private cpu: CPU

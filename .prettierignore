@@ -1,1 +1,2 @@
 src/emulator/opcodes.ts
+src/emulator/constants.ts

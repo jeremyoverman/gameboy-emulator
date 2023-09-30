@@ -1,5 +1,10 @@
 import { CPU } from './cpu'
-import { ArithmeticRegisterName, RegisterName, GpSixteenBitRegisterName, GpEightBitRegisterName } from './registers'
+import {
+  ArithmeticRegisterName,
+  RegisterName,
+  GpSixteenBitRegisterName,
+  GpEightBitRegisterName,
+} from './types/registers'
 import { convertTwosComplement, uInt8ArrayToNumber } from './utils'
 
 type ArithmeticReturn = {
