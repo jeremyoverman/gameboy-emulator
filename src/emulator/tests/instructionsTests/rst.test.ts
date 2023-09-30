@@ -5,11 +5,11 @@ const execute = (opcode: number, pc: number) => {
 
   cpu.registers.set('sp', 0xfffe)
   cpu.registers.set('pc', 0x0100)
-  cpu.memory.writeByte(0x100, opcode)
+  cpu.bus.writeByte(0x100, opcode)
   cpu.step()
   expect(cpu.registers.get('pc')).toEqual(pc)
-  expect(cpu.memory.readByte(0xfffe)).toEqual(0x00)
-  expect(cpu.memory.readByte(0xfffd)).toEqual(0x01)
+  expect(cpu.bus.readByte(0xfffe)).toEqual(0x00)
+  expect(cpu.bus.readByte(0xfffd)).toEqual(0x01)
 }
 
 test('0xc7: RST 00H', () => {

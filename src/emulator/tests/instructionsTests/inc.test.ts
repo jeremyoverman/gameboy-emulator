@@ -59,9 +59,9 @@ test('incrementing hl reference', () => {
   const cpu = new CPU(() => {})
   const instructions = new Instructions(cpu)
 
-  cpu.memory.writeByte(0xff00, 0x03)
+  cpu.bus.writeByte(0xff00, 0x03)
   cpu.registers.set('hl', 0xff00)
   instructions.inc('hl', true)
 
-  expect(cpu.memory.readByte(0xff00)).toEqual(0x04)
+  expect(cpu.bus.readByte(0xff00)).toEqual(0x04)
 })

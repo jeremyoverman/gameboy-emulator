@@ -10,7 +10,7 @@ const execute = (cpu: CPU, opcode: number) => {
   cpu.registers.set('sp', STACK_ADDR)
   cpu.registers.set('pc', PC_SUB)
   cpu.instructions.push(PC_PARENT)
-  cpu.memory.writeByte(PC_SUB, opcode)
+  cpu.bus.writeByte(PC_SUB, opcode)
   cpu.step()
 }
 

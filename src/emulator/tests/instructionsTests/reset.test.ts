@@ -25,9 +25,9 @@ test('Resetting a 1 bit on an 8 bit register', () => {
   const cpu = new CPU(() => {})
   const instructions = new Instructions(cpu)
 
-  cpu.memory.writeByte(0xff00, 0b0000_1111)
+  cpu.bus.writeByte(0xff00, 0b0000_1111)
   cpu.registers.set('hl', 0xff00)
   instructions.reset('hl', 3)
 
-  expect(cpu.memory.readByte(0xff00)).toEqual(0b0000_0111)
+  expect(cpu.bus.readByte(0xff00)).toEqual(0b0000_0111)
 })

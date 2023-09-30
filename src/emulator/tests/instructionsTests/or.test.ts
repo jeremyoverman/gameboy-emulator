@@ -50,7 +50,7 @@ test('oring hl reference', () => {
   const cpu = new CPU(() => {})
   const instructions = new Instructions(cpu)
 
-  cpu.memory.writeByte(0xff00, 0b00000101)
+  cpu.bus.writeByte(0xff00, 0b00000101)
   cpu.registers.set('a', 0b00000111)
   cpu.registers.set('hl', 0xff00)
   instructions.or('hl', true)

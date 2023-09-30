@@ -1,7 +1,7 @@
 import { ACTION_BUTTON, BUTTONS, DIRECTION_BUTTON, INTERRUPTS, BUS_REGISTERS, LCD_FLAGS } from './constants'
 import { Button, Interrupt } from './types/memory'
 
-export class Memory {
+export class Bus {
   // Timers
   div: number = 0
   tima: number = 0

@@ -64,8 +64,8 @@ export class Instructions {
 
   private readStack() {
     const sp = this.cpu.registers.get('sp')
-    const lsb = this.cpu.memory.readByte(sp)
-    const msb = this.cpu.memory.readByte(sp + 1)
+    const lsb = this.cpu.bus.readByte(sp)
+    const msb = this.cpu.bus.readByte(sp + 1)
 
     return (msb << 8) | lsb
   }
@@ -132,7 +132,7 @@ export class Instructions {
 
     if (reference) {
       address = value
-      value = this.cpu.memory.readByte(value)
+      value = this.cpu.bus.readByte(value)
     }
 
     return { address, value }
@@ -181,7 +181,7 @@ export class Instructions {
     }
 
     if (address) {
-      this.cpu.memory.writeByte(address, result)
+      this.cpu.bus.writeByte(address, result)
     } else {
       this.cpu.registers.set(reg, result)
     }
@@ -204,7 +204,7 @@ export class Instructions {
   bit(source: GpEightBitRegisterName | 'hl', bit: number) {
     let value = this.cpu.registers.get(source)
     if (source === 'hl') {
-      value = this.cpu.memory.readByte(value)
+      value = this.cpu.bus.readByte(value)
     }
     const bitValue = (value >> bit) & 0x1
 
@@ -219,7 +219,7 @@ export class Instructions {
     const result = value | (0x1 << bit)
 
     if (address) {
-      this.cpu.memory.writeByte(address, result)
+      this.cpu.bus.writeByte(address, result)
     } else {
       this.cpu.registers.set(reg, result)
     }
@@ -231,7 +231,7 @@ export class Instructions {
     const result = value & ~(0x1 << bit)
 
     if (address) {
-      this.cpu.memory.writeByte(address, result)
+      this.cpu.bus.writeByte(address, result)
     } else {
       this.cpu.registers.set(reg, result)
     }
@@ -325,7 +325,7 @@ export class Instructions {
 
     result.carry = this.cpu.registers.getFlag('Carry')
     if (address) {
-      this.cpu.memory.writeByte(address, result.value)
+      this.cpu.bus.writeByte(address, result.value)
       this._setWithFlags(null, result)
     } else if (is16Bit) {
       this.cpu.registers.set(source, result.value)
@@ -341,7 +341,7 @@ export class Instructions {
 
     result.carry = this.cpu.registers.getFlag('Carry')
     if (address) {
-      this.cpu.memory.writeByte(address, result.value)
+      this.cpu.bus.writeByte(address, result.value)
       this._setWithFlags(null, result)
     } else if (is16Bit) {
       this.cpu.registers.set(source, result.value)
@@ -498,7 +498,7 @@ export class Instructions {
     }
 
     if (address) {
-      this.cpu.memory.writeByte(address, result)
+      this.cpu.bus.writeByte(address, result)
     } else {
       this.cpu.registers.set(reg, result)
     }
@@ -552,7 +552,7 @@ export class Instructions {
         address += 0xff00
       }
 
-      bytes = this.cpu.memory.readBytes(address, 1)
+      bytes = this.cpu.bus.readBytes(address, 1)
     }
 
     if (opts.target === 'd16') {
@@ -565,7 +565,7 @@ export class Instructions {
 
     if (typeof target === 'number' || opts.refTarget) {
       const destValue = this._getValue(target)
-      this.cpu.memory.writeBytes(destValue, Array.from(bytes))
+      this.cpu.bus.writeBytes(destValue, Array.from(bytes))
     } else {
       this.cpu.registers.setUint8Array(target, bytes)
     }
@@ -582,9 +582,9 @@ export class Instructions {
     const address = 0xff00 + offset
 
     if (toA) {
-      this.cpu.registers.set('a', this.cpu.memory.readByte(address))
+      this.cpu.registers.set('a', this.cpu.bus.readByte(address))
     } else {
-      this.cpu.memory.writeByte(address, this.cpu.registers.get('a'))
+      this.cpu.bus.writeByte(address, this.cpu.registers.get('a'))
     }
   }
 
@@ -592,8 +592,8 @@ export class Instructions {
     const sp = this.cpu.registers.get('sp')
     const value = this._getValue(reg)
 
-    this.cpu.memory.writeByte(sp - 1, value >> 8)
-    this.cpu.memory.writeByte(sp - 2, value & 0xff)
+    this.cpu.bus.writeByte(sp - 1, value >> 8)
+    this.cpu.bus.writeByte(sp - 2, value & 0xff)
 
     this.cpu.registers.decStackPointer()
   }

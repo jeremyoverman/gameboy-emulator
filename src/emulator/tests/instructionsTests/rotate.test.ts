@@ -87,11 +87,11 @@ test('rlc with carry', () => {
 test('rlc with carry on hl ref', () => {
   const cpu = new CPU(() => {})
 
-  cpu.memory.writeByte(0xff00, 0b11100000)
+  cpu.bus.writeByte(0xff00, 0b11100000)
   cpu.registers.set('hl', 0xff00)
   cpu.instructions.rlc('hl', true)
 
-  expect(cpu.memory.readByte(0xff00)).toEqual(0b11000001)
+  expect(cpu.bus.readByte(0xff00)).toEqual(0b11000001)
   expect(cpu.registers.getFlag('Carry')).toEqual(true)
 })
 
@@ -447,9 +447,9 @@ test('swap 16 bit register', () => {
 test('swap hl reference', () => {
   const cpu = new CPU(() => {})
 
-  cpu.memory.writeByte(0xff00, 0b11110000)
+  cpu.bus.writeByte(0xff00, 0b11110000)
   cpu.registers.set('hl', 0xff00)
   cpu.instructions.swap('hl', true)
 
-  expect(cpu.memory.readByte(0xff00)).toEqual(0b00001111)
+  expect(cpu.bus.readByte(0xff00)).toEqual(0b00001111)
 })

@@ -11,7 +11,7 @@ const loadFile = (name: string) => {
 }
 
 const setInitialState = (cpu: CPU, json: JsonTest) => {
-  cpu.memory.writeByte(0xff50, 1)
+  cpu.bus.writeByte(0xff50, 1)
   cpu.registers.set('a', json.initial.a)
   cpu.registers.set('b', json.initial.b)
   cpu.registers.set('c', json.initial.c)
@@ -26,7 +26,7 @@ const setInitialState = (cpu: CPU, json: JsonTest) => {
   cpu.interrupMasterEnabled = json.initial.ime === 1
 
   json.initial.ram.forEach((row) => {
-    cpu.memory.writeByte(row[0], row[1])
+    cpu.bus.writeByte(row[0], row[1])
   })
 }
 
@@ -49,7 +49,7 @@ const testFinalState = (cpu: CPU, json: JsonTest) => {
   cpu.interrupMasterEnabled = json.final.ime === 1
 
   json.final.ram.forEach((row) => {
-    expect(cpu.memory.readByte(row[0])).toBe(row[1])
+    expect(cpu.bus.readByte(row[0])).toBe(row[1])
   })
 }
 

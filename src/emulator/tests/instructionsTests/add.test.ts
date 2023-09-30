@@ -125,8 +125,8 @@ test('adding the reference HL with A', () => {
   const cpu = new CPU(() => {})
   const instructions = new Instructions(cpu)
 
-  cpu.memory.writeByte(0xff50, 0x01)
-  cpu.memory.writeByte(0x00ff, 0x01)
+  cpu.bus.writeByte(0xff50, 0x01)
+  cpu.bus.writeByte(0x00ff, 0x01)
   cpu.registers.set('hl', 0x00ff)
   cpu.registers.set('a', 0x02)
   instructions.add('hl', false, true)

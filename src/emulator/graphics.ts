@@ -29,7 +29,7 @@ export class Graphics {
     this.emit = emit
 
     this.setScale(this.scale)
-    this.cpu.memory.writeByte(BUS_REGISTERS.stat, 0b00000001)
+    this.cpu.bus.writeByte(BUS_REGISTERS.stat, 0b00000001)
   }
 
   setScale(scale: number) {
@@ -42,7 +42,7 @@ export class Graphics {
   }
 
   render() {
-    if (!this.cpu.memory.getLcdFlag('enable')) {
+    if (!this.cpu.bus.getLcdFlag('enable')) {
       return
     }
 
@@ -53,13 +53,13 @@ export class Graphics {
   }
 
   renderBackground() {
-    const index = this.cpu.memory.getLcdFlag('bgTileMap') ? 0x9c00 : 0x9800
+    const index = this.cpu.bus.getLcdFlag('bgTileMap') ? 0x9c00 : 0x9800
 
     for (let idx = 0; idx < 32 * 32; idx += 1) {
       try {
-        const scx = this.cpu.memory.readByte(BUS_REGISTERS.scx)
-        const scy = this.cpu.memory.readByte(BUS_REGISTERS.scy)
-        const tile = this.cpu.memory.memory[index + idx]
+        const scx = this.cpu.bus.readByte(BUS_REGISTERS.scx)
+        const scy = this.cpu.bus.readByte(BUS_REGISTERS.scy)
+        const tile = this.cpu.bus.memory[index + idx]
 
         this.renderTile(tile, (idx % 32) * 8 - scx, Math.floor(idx / 32) * 8 - scy)
       } catch (e) {
@@ -72,10 +72,10 @@ export class Graphics {
     const index = BUS_REGISTERS.oam
 
     for (let idx = 0; idx < 40; idx += 1) {
-      const y = this.cpu.memory.memory[index + idx * 4]
-      const x = this.cpu.memory.memory[index + idx * 4 + 1]
-      const tile = this.cpu.memory.memory[index + idx * 4 + 2]
-      const flags = this.cpu.memory.memory[index + idx * 4 + 3]
+      const y = this.cpu.bus.memory[index + idx * 4]
+      const x = this.cpu.bus.memory[index + idx * 4 + 1]
+      const tile = this.cpu.bus.memory[index + idx * 4 + 2]
+      const flags = this.cpu.bus.memory[index + idx * 4 + 3]
 
       if (x && y) {
         this.renderTile(tile, x - 8, y - 16)
@@ -135,7 +135,7 @@ export class Graphics {
   }
 
   incrementScanline() {
-    let ly = this.cpu.memory.readByte(BUS_REGISTERS.ly) + 1
+    let ly = this.cpu.bus.readByte(BUS_REGISTERS.ly) + 1
 
     if (ly > 153) {
       ly = 0
@@ -143,18 +143,18 @@ export class Graphics {
       this.cpu.interrupt('vblank')
     }
 
-    this.cpu.memory.writeByte(BUS_REGISTERS.ly, ly)
+    this.cpu.bus.writeByte(BUS_REGISTERS.ly, ly)
   }
 
   getTileData(tileIndex: number) {
-    const bgWindowTileData = this.cpu.memory.getLcdFlag('bgWindowTileData')
+    const bgWindowTileData = this.cpu.bus.getLcdFlag('bgWindowTileData')
     const bgIndex = bgWindowTileData ? 0x8000 : 0x9000
 
     if (!bgWindowTileData) {
       tileIndex = convertTwosComplement(tileIndex)
     }
 
-    return this.cpu.memory.readBytes(bgIndex + tileIndex * 16, 16)
+    return this.cpu.bus.readBytes(bgIndex + tileIndex * 16, 16)
   }
 
   tileToColorMap(tile: Uint8Array) {
@@ -204,7 +204,7 @@ export class Graphics {
     const pixels = new Uint8Array(8 * 8 * 4)
     let pos = 0
 
-    const palette = this.convertPaletteToRGB(this.cpu.memory.readByte(0xff47))
+    const palette = this.convertPaletteToRGB(this.cpu.bus.readByte(0xff47))
 
     map.forEach((row) => {
       row.forEach((col) => {

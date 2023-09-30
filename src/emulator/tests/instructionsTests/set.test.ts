@@ -25,9 +25,9 @@ test('Setting a 0 bit on hl reference', () => {
   const cpu = new CPU(() => {})
   const instructions = new Instructions(cpu)
 
-  cpu.memory.writeByte(0xff00, 0b0000_0111)
+  cpu.bus.writeByte(0xff00, 0b0000_0111)
   cpu.registers.set('hl', 0xff00)
   instructions.set('hl', 3)
 
-  expect(cpu.memory.readByte(0xff00)).toEqual(0b0000_1111)
+  expect(cpu.bus.readByte(0xff00)).toEqual(0b0000_1111)
 })

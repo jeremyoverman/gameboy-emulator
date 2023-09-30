@@ -12,7 +12,7 @@ import {
 } from './constants'
 import { Graphics } from './graphics'
 import { Instructions } from './instructions'
-import { Memory } from './memory'
+import { Bus } from './bus'
 import { OpCodes } from './opcodes'
 import { Registers } from './registers'
 import { OpCodeDefinition } from './types/cpu'
@@ -36,7 +36,7 @@ export class CPU {
   graphics: Graphics
   registers: Registers
   instructions: Instructions
-  memory: Memory
+  bus: Bus
   opcodes: OpCodes
 
   // Counters
@@ -58,14 +58,14 @@ export class CPU {
     this.instructions = new Instructions(this)
     this.opcodes = new OpCodes(this)
     this.registers = new Registers()
-    this.memory = new Memory()
+    this.bus = new Bus()
     this.graphics = new Graphics(this, emit)
 
     this.setCyclesPerFrame()
   }
 
   interrupt(interrupt: Interrupt) {
-    this.memory.setInterruptFlag(interrupt, true)
+    this.bus.setInterruptFlag(interrupt, true)
   }
 
   private addCycles(cycles: number) {
@@ -98,7 +98,7 @@ export class CPU {
   vblankClock() {
     this.vblankClockInterval = setInterval(() => {
       try {
-        this.memory.setInterruptFlag('vblank', true)
+        this.bus.setInterruptFlag('vblank', true)
         this.executeFrame()
         this.emit('vblank')
         this.graphics.render()
@@ -127,8 +127,8 @@ export class CPU {
     let jumpAddress: number | undefined
 
     INTERRUPT_PRIORITY.some((interrupt) => {
-      if (this.memory.getInterruptFlag(interrupt)) {
-        this.memory.setInterruptFlag(interrupt, false)
+      if (this.bus.getInterruptFlag(interrupt)) {
+        this.bus.setInterruptFlag(interrupt, false)
         jumpAddress = INTERRUPTS[interrupt].jump
         return true
       }
@@ -140,10 +140,10 @@ export class CPU {
   updateTimers() {
     if (this.divCycles >= CYCLES_PER_DIV) {
       this.divCycles -= CYCLES_PER_DIV
-      this.memory.div = (this.memory.div + 1) & 0xffff
+      this.bus.div = (this.bus.div + 1) & 0xffff
     }
 
-    const tac = this.memory.readByte(BUS_REGISTERS.tac)
+    const tac = this.bus.readByte(BUS_REGISTERS.tac)
     if (tac !== 0) {
       console.log(tac.toString(2).padStart(3, '0'))
     }
@@ -151,10 +151,10 @@ export class CPU {
       const cycles = tac & TMA[tac & 0b11]
       if (this.timaCycles >= cycles) {
         this.timaCycles -= cycles
-        this.memory.tima = this.memory.tima + 1
+        this.bus.tima = this.bus.tima + 1
 
-        if (this.memory.tima > 0xff) {
-          this.memory.tima = this.memory.readByte(BUS_REGISTERS.tma)
+        if (this.bus.tima > 0xff) {
+          this.bus.tima = this.bus.readByte(BUS_REGISTERS.tma)
           this.interrupt('timer')
         }
       }
@@ -173,7 +173,7 @@ export class CPU {
     let opcode: OpCodeDefinition
     let args = new Uint8Array(0)
 
-    let instructionByte = this.memory.readByte(pc)
+    let instructionByte = this.bus.readByte(pc)
     const interruptJumpAddress = this.handleInterrupt()
 
     if (interruptJumpAddress !== undefined) {
@@ -181,13 +181,13 @@ export class CPU {
       opcode = this.opcodes.opcodes[instructionByte]
       args = new Uint8Array([interruptJumpAddress & 0xff, (interruptJumpAddress >> 8) & 0xff])
     } else if (instructionByte === 0xcb) {
-      instructionByte = this.memory.readByte((pc + 1) & 0xffff)
+      instructionByte = this.bus.readByte((pc + 1) & 0xffff)
       opcode = this.opcodes.prefixOpcodes[instructionByte]
     } else {
       opcode = this.opcodes.opcodes[instructionByte]
       const bytes = opcode?.length !== undefined ? opcode.length : 1
       // TODO: This won't handle wrapping
-      args = this.memory.readBytes((pc + 1) & 0xffff, bytes - 1)
+      args = this.bus.readBytes((pc + 1) & 0xffff, bytes - 1)
     }
 
     if (!opcode) {

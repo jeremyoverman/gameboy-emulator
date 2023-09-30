@@ -2,28 +2,28 @@ import { CPU } from '../../cpu'
 
 test('PUSH BC', () => {
   const cpu = new CPU(() => {})
-  cpu.memory.writeByte(0xff50, 0x01)
+  cpu.bus.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('sp', 0xfffe)
   cpu.registers.set('bc', 0xaabb)
-  cpu.memory.writeByte(0x0000, 0xc5) // PUSH BC
+  cpu.bus.writeByte(0x0000, 0xc5) // PUSH BC
 
   cpu.step()
 
-  expect(cpu.memory.readByte(0xfffd)).toBe(0xaa)
-  expect(cpu.memory.readByte(0xfffc)).toBe(0xbb)
+  expect(cpu.bus.readByte(0xfffd)).toBe(0xaa)
+  expect(cpu.bus.readByte(0xfffc)).toBe(0xbb)
 })
 
 test('POP BC', () => {
   const cpu = new CPU(() => {})
-  cpu.memory.writeByte(0xff50, 0x01)
+  cpu.bus.writeByte(0xff50, 0x01)
 
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('sp', 0xfffc)
-  cpu.memory.writeByte(0x0000, 0xc1) // POP BC
-  cpu.memory.writeByte(0xfffc, 0xbb)
-  cpu.memory.writeByte(0xfffd, 0xaa)
+  cpu.bus.writeByte(0x0000, 0xc1) // POP BC
+  cpu.bus.writeByte(0xfffc, 0xbb)
+  cpu.bus.writeByte(0xfffd, 0xaa)
 
   cpu.step()
 
@@ -32,13 +32,13 @@ test('POP BC', () => {
 
 xtest('blargg special test #5', () => {
   const cpu = new CPU(() => {})
-  cpu.memory.writeByte(0xff50, 0x01)
+  cpu.bus.writeByte(0xff50, 0x01)
 
   cpu.registers.set('sp', 0xfffe)
   cpu.registers.set('pc', 0x0000)
 
   // Failure
-  cpu.memory.writeBytes(0xaa00, [
+  cpu.bus.writeBytes(0xaa00, [
     0x01,
     0xaa,
     0xaa, // LD BC,$aaaa
@@ -50,7 +50,7 @@ xtest('blargg special test #5', () => {
   ])
 
   // Success
-  cpu.memory.writeBytes(0xaa10, [
+  cpu.bus.writeBytes(0xaa10, [
     0x01,
     0xaa,
     0xaa, // LD BC,$aaaa
@@ -85,7 +85,7 @@ xtest('blargg special test #5', () => {
     0x10,
     0xaa, // $000D: JP NZ,$aa10 ; success
   ]
-  cpu.memory.writeBytes(0x0000, instructions)
+  cpu.bus.writeBytes(0x0000, instructions)
 
   let i = 0
   while (!cpu.isStopped()) {
@@ -96,5 +96,5 @@ xtest('blargg special test #5', () => {
     }
   }
 
-  expect(cpu.memory.readByte(0xaaaa)).toBe(0xaa)
+  expect(cpu.bus.readByte(0xaaaa)).toBe(0xaa)
 })

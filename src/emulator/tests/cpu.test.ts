@@ -4,11 +4,11 @@ import { CPU } from '../cpu'
 test('Stepping an instruction', () => {
   const cpu = new CPU(() => {})
 
-  cpu.memory.writeByte(0xff50, 0x01)
+  cpu.bus.writeByte(0xff50, 0x01)
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0b1010_0000)
   cpu.registers.set('b', 0b0000_1111)
-  cpu.memory.writeByte(0x00, 0xb0) // OR B
+  cpu.bus.writeByte(0x00, 0xb0) // OR B
   cpu.step()
 
   expect(cpu.registers.get('a')).toBe(0b1010_1111)
@@ -18,11 +18,11 @@ test('Stepping an instruction', () => {
 test('Stepping 2-byte instruction', () => {
   const cpu = new CPU(() => {})
 
-  cpu.memory.writeByte(0xff50, 0x01)
+  cpu.bus.writeByte(0xff50, 0x01)
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('a', 0x01)
-  cpu.memory.writeByte(0x00, 0xc6) // ADD A, d8
-  cpu.memory.writeByte(0x01, 0x01)
+  cpu.bus.writeByte(0x00, 0xc6) // ADD A, d8
+  cpu.bus.writeByte(0x01, 0x01)
   cpu.step()
 
   expect(cpu.registers.get('a')).toBe(0x02)
@@ -32,9 +32,9 @@ test('Stepping 2-byte instruction', () => {
 test('Jumping', () => {
   const cpu = new CPU(() => {})
 
-  cpu.memory.writeByte(0xff50, 0x01)
+  cpu.bus.writeByte(0xff50, 0x01)
   cpu.registers.set('pc', 0x0000)
-  cpu.memory.writeBytes(
+  cpu.bus.writeBytes(
     0x0000,
     [0xc3, 0xaa, 0xbb] // JP a16
   )
@@ -46,14 +46,14 @@ test('Jumping', () => {
 test('Multiple bit operations', () => {
   const cpu = new CPU(() => {})
 
-  cpu.memory.writeByte(0xff50, 0x01)
+  cpu.bus.writeByte(0xff50, 0x01)
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('b', 0x00)
   cpu.registers.set('c', 0x00)
   cpu.registers.set('d', 0x00)
 
   // prettier-ignore
-  cpu.memory.writeBytes(0x00, [
+  cpu.bus.writeBytes(0x00, [
     0xcb, 0xc0, // SET 0, B
     0xcb, 0xc1, // SET 0, C
     0xcb, 0xc2, // SET 0, D
@@ -72,12 +72,12 @@ test('Multiple bit operations', () => {
 test('Handling a vblank interrupt', () => {
   const cpu = new CPU(() => {})
 
-  cpu.memory.writeByte(0xff50, 0x01)
+  cpu.bus.writeByte(0xff50, 0x01)
   cpu.registers.set('pc', 0x0000)
   cpu.registers.set('sp', 0xfffe)
-  cpu.memory.writeBytes(0xbb00, [0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+  cpu.bus.writeBytes(0xbb00, [0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
   // prettier-ignore
-  cpu.memory.writeBytes(0x0000, [
+  cpu.bus.writeBytes(0x0000, [
     0x3e, 0xa0,       // $0000; LD A, 0xa0
     0x21, 0x00, 0xbb, // $0002; LD HL, 0xbb00
     0x22,             // $0005; LD (HL+), A
@@ -85,7 +85,7 @@ test('Handling a vblank interrupt', () => {
     0xc3, 0x05, 0x00, // $0007; JP a16, 0x0005
   ])
   // prettier-ignore
-  cpu.memory.writeBytes(INTERRUPTS.vblank.jump, [
+  cpu.bus.writeBytes(INTERRUPTS.vblank.jump, [
     0x06, 0xaa,       // $0040; LD B, 0xaa
     0xd9,             // $0042; RETI
   ])
@@ -94,13 +94,13 @@ test('Handling a vblank interrupt', () => {
     cpu.step()
   }
 
-  expect(cpu.memory.readBytes(0xbb00, 6)).toEqual(new Uint8Array([0xa0, 0xa1, 0xa2, 0x00, 0x00, 0x00]))
+  expect(cpu.bus.readBytes(0xbb00, 6)).toEqual(new Uint8Array([0xa0, 0xa1, 0xa2, 0x00, 0x00, 0x00]))
 
   // Enable vblank interrupt
-  cpu.memory.writeByte(0xffff, 0b0000_0001)
+  cpu.bus.writeByte(0xffff, 0b0000_0001)
   cpu.interrupt('vblank')
 
-  expect(cpu.memory.getInterruptFlag('vblank')).toBe(true)
+  expect(cpu.bus.getInterruptFlag('vblank')).toBe(true)
   expect(cpu.registers.get('pc')).toBe(0x0007)
   cpu.step()
 
@@ -117,5 +117,5 @@ test('Handling a vblank interrupt', () => {
     cpu.step()
   }
 
-  expect(cpu.memory.readBytes(0xbb00, 6)).toEqual(new Uint8Array([0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5]))
+  expect(cpu.bus.readBytes(0xbb00, 6)).toEqual(new Uint8Array([0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5]))
 })

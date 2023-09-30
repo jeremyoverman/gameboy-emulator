@@ -1,7 +1,7 @@
-import { Memory } from '../memory'
+import { Bus } from '../bus'
 
 test('Reading a byte from memory', () => {
-  const memory = new Memory()
+  const memory = new Bus()
   memory.writeByte(0xff50, 0x01)
   memory.memory[0x00ff] = 0xbb
 
@@ -9,7 +9,7 @@ test('Reading a byte from memory', () => {
 })
 
 test('Writing a byte to memory', () => {
-  const memory = new Memory()
+  const memory = new Bus()
   memory.writeByte(0x00ff, 0xbb)
 
   expect(memory.memory[0x00ff]).toEqual(0xbb)

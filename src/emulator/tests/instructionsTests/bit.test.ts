@@ -30,7 +30,7 @@ test('hl ref with a bit set', () => {
   const cpu = new CPU(() => {})
   const instructions = new Instructions(cpu)
 
-  cpu.memory.writeByte(0xff00, 0b0000_0111)
+  cpu.bus.writeByte(0xff00, 0b0000_0111)
   cpu.registers.set('hl', 0xff00)
   instructions.bit('hl', 0)
 

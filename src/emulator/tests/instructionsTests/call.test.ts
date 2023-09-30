@@ -5,7 +5,7 @@ const pc = 0x0100
 const execute = (cpu: CPU, opcode: number) => {
   cpu.registers.set('pc', pc)
   cpu.registers.set('sp', 0xfffe)
-  cpu.memory.writeBytes(0x0100, [opcode, 0x22, 0x11])
+  cpu.bus.writeBytes(0x0100, [opcode, 0x22, 0x11])
 
   cpu.step()
 }

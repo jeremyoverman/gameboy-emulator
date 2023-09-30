@@ -58,7 +58,7 @@ export const EmulatorProvider = ({
     }
 
     if (gamerom?.file) {
-      emulator?.cpu.memory.loadRomFile(gamerom.file);
+      emulator?.cpu.bus.loadRomFile(gamerom.file);
     }
   }
 

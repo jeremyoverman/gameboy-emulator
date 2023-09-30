@@ -80,7 +80,7 @@ test('comparing hl reference', () => {
   const cpu = new CPU(() => {})
   const instructions = new Instructions(cpu)
 
-  cpu.memory.writeByte(0xff00, 0x02)
+  cpu.bus.writeByte(0xff00, 0x02)
   cpu.registers.set('a', 0x03)
   cpu.registers.set('hl', 0xff00)
   instructions.cp('hl', true)
