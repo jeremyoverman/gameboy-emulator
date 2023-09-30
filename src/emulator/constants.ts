@@ -2,8 +2,9 @@
 // Display Data
 //
 
-export const WIDTH      = 160
-export const HEIGHT     = 144
+export const LCD_WIDTH      = 160
+export const LCD_HEIGHT     = 144
+export const FRAME_HEIGHT   = 153
 export const TILE_WIDTH = 8 * 4
 
 export const LCD_FLAGS  = {
@@ -96,8 +97,9 @@ export const FLAGS = {
 export const FPS = 60
 
 export const CYCLES_PER_SECOND   = 4194304
-export const CYCLES_PER_SCANLINE = 456
 export const CYCLES_PER_DIV      = CYCLES_PER_SECOND / 16384
+
+export const DOTS_PER_SCANLINE   = 456
 
 export const TIMER_FLAGS = {
   enable: 0b100,

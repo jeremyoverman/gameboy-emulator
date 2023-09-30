@@ -14,7 +14,7 @@ import {
   RegisterName,
   SpecialRegisterNames,
   SpecialSixteenBitRegisterName,
-} from './types/registers'
+} from './types'
 
 export class Registers {
   a: number = 0

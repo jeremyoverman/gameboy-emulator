@@ -21,7 +21,7 @@ const Lcd = ({
   const [ctx, setCtx] = useState<CanvasRenderingContext2D>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const { lcd } = useEmulator();
+  const { lcd, fps } = useEmulator();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -35,10 +35,22 @@ const Lcd = ({
   useEffect(() => {
     if (!ctx) return;
     if (lcd.data && lcd.width && lcd.height) {
+      const writeText = (text: string, x: number, y: number) => {
+        const width = ctx.measureText(text).width;
+        const height = 16;
+
+        ctx.font = '16px Arial';
+        ctx.fillStyle = 'white';
+        ctx.fillRect(x, y, width + 8, height + 8);
+        ctx.fillStyle = 'black';
+        ctx.fillText(`FPS: ${fps.toFixed(0)}`, x + 4, y + height + 4)
+      }
+
       const data = new ImageData(lcd.data, lcd.width, lcd.height);
       ctx.putImageData(data, 0, 0);
+      writeText(`FPS: ${fps.toFixed(0)}`, 0, 0);
     }
-  }, [ctx, lcd])
+  }, [ctx, lcd, fps])
 
   return (
     <LcdContainer className={className} $width={width} $height={height}>

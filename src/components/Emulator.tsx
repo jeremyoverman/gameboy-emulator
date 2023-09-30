@@ -28,11 +28,11 @@ const Emulator = ({
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const key = BUTTON_MAP[event.key as keyof typeof BUTTON_MAP];
-      if (key) emulator?.pressButton(key, true);
+      if (key) emulator?.joypad.set(key, true);
     };
     const handleKeyUp = (event: KeyboardEvent) => {
       const key = BUTTON_MAP[event.key as keyof typeof BUTTON_MAP];
-      if (key) emulator?.pressButton(key, false);
+      if (key) emulator?.joypad.set(key, false);
     };
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);

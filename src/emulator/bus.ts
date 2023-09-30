@@ -1,7 +1,9 @@
-import { ACTION_BUTTON, BUTTONS, DIRECTION_BUTTON, INTERRUPTS, BUS_REGISTERS, LCD_FLAGS } from './constants'
-import { Button, Interrupt } from './types/memory'
+import { INTERRUPTS, BUS_REGISTERS, LCD_FLAGS } from './constants'
+import { Emulator } from './emulator'
+import { Interrupt } from './types'
 
 export class Bus {
+  emulator: Emulator
   // Timers
   div: number = 0
   tima: number = 0
@@ -10,19 +12,8 @@ export class Bus {
   memory: Uint8Array = new Uint8Array(0xffff + 1).map(() => 0x00)
   bootRom: Uint8Array = new Uint8Array(0x100 + 1).map(() => 0x00)
 
-  // State
-  buttonStates: Record<Button, number> = {
-    A: BUTTONS.A,
-    B: BUTTONS.B,
-    Select: BUTTONS.Select,
-    Start: BUTTONS.Start,
-    Right: BUTTONS.Right,
-    Left: BUTTONS.Left,
-    Up: BUTTONS.Up,
-    Down: BUTTONS.Down,
-  }
-
-  constructor() {
+  constructor(emulator: Emulator) {
+    this.emulator = emulator
     this.writeByte(0xffff, 0x00)
   }
 
@@ -48,7 +39,7 @@ export class Bus {
 
   readByte(address: number): number {
     if (address === BUS_REGISTERS.joypad) {
-      return this.readJoypad()
+      return this.emulator.joypad.read()
     }
 
     if (address === BUS_REGISTERS.div) {
@@ -114,25 +105,5 @@ export class Bus {
     const lcdc = this.readByte(BUS_REGISTERS.lcdc)
 
     return (lcdc & LCD_FLAGS[flag]) === LCD_FLAGS[flag]
-  }
-
-  readJoypad() {
-    const joypad = this.memory[0xff00]
-
-    if ((joypad & DIRECTION_BUTTON) === 0) {
-      return joypad | this.buttonStates.Up | this.buttonStates.Down | this.buttonStates.Left | this.buttonStates.Right
-    } else if ((joypad & ACTION_BUTTON) === 0) {
-      return joypad | this.buttonStates.A | this.buttonStates.B | this.buttonStates.Select | this.buttonStates.Start
-    }
-
-    return joypad
-  }
-
-  toggleButton(button: Button, pressed: boolean) {
-    if (pressed) {
-      this.buttonStates[button] = 0
-    } else {
-      this.buttonStates[button] = BUTTONS[button]
-    }
   }
 }

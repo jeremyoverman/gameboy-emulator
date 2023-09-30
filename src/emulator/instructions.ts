@@ -1,10 +1,5 @@
-import { CPU } from './cpu'
-import {
-  ArithmeticRegisterName,
-  RegisterName,
-  GpSixteenBitRegisterName,
-  GpEightBitRegisterName,
-} from './types/registers'
+import { Emulator } from './emulator'
+import { ArithmeticRegisterName, RegisterName, GpSixteenBitRegisterName, GpEightBitRegisterName } from './types'
 import { convertTwosComplement, uInt8ArrayToNumber } from './utils'
 
 type ArithmeticReturn = {
@@ -45,34 +40,34 @@ export interface RotateOptions {
 }
 
 export class Instructions {
-  private cpu: CPU
+  emulator: Emulator
 
-  constructor(cpu: CPU) {
-    this.cpu = cpu
+  constructor(emulator: Emulator) {
+    this.emulator = emulator
   }
 
   private _setWithFlags(reg: ArithmeticRegisterName | null, ret: ArithmeticReturn) {
-    this.cpu.registers.setFlag('Carry', ret.carry)
-    this.cpu.registers.setFlag('Zero', ret.zero)
-    this.cpu.registers.setFlag('Subtraction', ret.subtraction)
-    this.cpu.registers.setFlag('HalfCarry', ret.halfCarry)
+    this.emulator.cpu.registers.setFlag('Carry', ret.carry)
+    this.emulator.cpu.registers.setFlag('Zero', ret.zero)
+    this.emulator.cpu.registers.setFlag('Subtraction', ret.subtraction)
+    this.emulator.cpu.registers.setFlag('HalfCarry', ret.halfCarry)
 
     if (reg) {
-      this.cpu.registers.set(reg, ret.value)
+      this.emulator.cpu.registers.set(reg, ret.value)
     }
   }
 
   private readStack() {
-    const sp = this.cpu.registers.get('sp')
-    const lsb = this.cpu.bus.readByte(sp)
-    const msb = this.cpu.bus.readByte(sp + 1)
+    const sp = this.emulator.cpu.registers.get('sp')
+    const lsb = this.emulator.bus.readByte(sp)
+    const msb = this.emulator.bus.readByte(sp + 1)
 
     return (msb << 8) | lsb
   }
 
   private _add(num1: number, num2: number, withCarry?: boolean, sixteenBit?: boolean, hcLower?: boolean) {
     const maxFull = sixteenBit ? 0xffff : 0xff
-    const carry = withCarry && this.cpu.registers.getFlag('Carry') ? 1 : 0
+    const carry = withCarry && this.emulator.cpu.registers.getFlag('Carry') ? 1 : 0
 
     const value = num1 + num2 + carry
     const ret: ArithmeticReturn = {
@@ -98,7 +93,7 @@ export class Instructions {
 
   private _subtract(num1: number, num2: number, withCarry?: boolean, sixteenBit?: boolean) {
     const minFull = sixteenBit ? 0xffff : 0xff
-    const carry = withCarry && this.cpu.registers.getFlag('Carry') ? 1 : 0
+    const carry = withCarry && this.emulator.cpu.registers.getFlag('Carry') ? 1 : 0
 
     const value = num1 - num2 - carry
     const ret: ArithmeticReturn = {
@@ -123,7 +118,7 @@ export class Instructions {
   }
 
   private _getValue(source: ArithmeticRegisterName | 'pc' | number) {
-    return typeof source === 'number' ? source : this.cpu.registers.get(source)
+    return typeof source === 'number' ? source : this.emulator.cpu.registers.get(source)
   }
 
   private getValueAndAddress(source: ArithmeticRegisterName | number, reference?: boolean) {
@@ -132,7 +127,7 @@ export class Instructions {
 
     if (reference) {
       address = value
-      value = this.cpu.bus.readByte(value)
+      value = this.emulator.bus.readByte(value)
     }
 
     return { address, value }
@@ -143,13 +138,13 @@ export class Instructions {
       return false
     }
 
-    return this.cpu.registers.is16Bit(source as GpSixteenBitRegisterName)
+    return this.emulator.cpu.registers.is16Bit(source as GpSixteenBitRegisterName)
   }
 
   _rotate(reg: ArithmeticRegisterName, opts: RotateOptions) {
     const { address, value } = this.getValueAndAddress(reg, opts.reference)
 
-    const is16Bit = this.cpu.registers.is16Bit(reg) && !opts.reference
+    const is16Bit = this.emulator.cpu.registers.is16Bit(reg) && !opts.reference
     const leftBit = is16Bit ? 15 : 7
     const msb = (value >> leftBit) & 0x1
 
@@ -171,7 +166,7 @@ export class Instructions {
     }
 
     if (opts.throughCarry) {
-      if (this.cpu.registers.getFlag('Carry')) {
+      if (this.emulator.cpu.registers.getFlag('Carry')) {
         const sigMask = is16Bit ? 0x8000 : 0x80
         result = result | (opts.direction === 'left' ? 0x1 : sigMask)
       } else {
@@ -181,36 +176,36 @@ export class Instructions {
     }
 
     if (address) {
-      this.cpu.bus.writeByte(address, result)
+      this.emulator.bus.writeByte(address, result)
     } else {
-      this.cpu.registers.set(reg, result)
+      this.emulator.cpu.registers.set(reg, result)
     }
-    this.cpu.registers.setFlag('Zero', result === 0)
-    this.cpu.registers.setFlag('Subtraction', false)
-    this.cpu.registers.setFlag('HalfCarry', false)
-    this.cpu.registers.setFlag('Carry', bitValue === 1)
+    this.emulator.cpu.registers.setFlag('Zero', result === 0)
+    this.emulator.cpu.registers.setFlag('Subtraction', false)
+    this.emulator.cpu.registers.setFlag('HalfCarry', false)
+    this.emulator.cpu.registers.setFlag('Carry', bitValue === 1)
   }
 
   nop() {}
 
   halt() {
-    this.cpu.halt()
+    this.emulator.cpu.halt()
   }
 
   stop() {
-    this.cpu.stop()
+    this.emulator.cpu.stop()
   }
 
   bit(source: GpEightBitRegisterName | 'hl', bit: number) {
-    let value = this.cpu.registers.get(source)
+    let value = this.emulator.cpu.registers.get(source)
     if (source === 'hl') {
-      value = this.cpu.bus.readByte(value)
+      value = this.emulator.bus.readByte(value)
     }
     const bitValue = (value >> bit) & 0x1
 
-    this.cpu.registers.setFlag('Zero', bitValue === 0)
-    this.cpu.registers.setFlag('Subtraction', false)
-    this.cpu.registers.setFlag('HalfCarry', true)
+    this.emulator.cpu.registers.setFlag('Zero', bitValue === 0)
+    this.emulator.cpu.registers.setFlag('Subtraction', false)
+    this.emulator.cpu.registers.setFlag('HalfCarry', true)
   }
 
   set(reg: GpEightBitRegisterName | 'hl', bit: number) {
@@ -219,9 +214,9 @@ export class Instructions {
     const result = value | (0x1 << bit)
 
     if (address) {
-      this.cpu.bus.writeByte(address, result)
+      this.emulator.bus.writeByte(address, result)
     } else {
-      this.cpu.registers.set(reg, result)
+      this.emulator.cpu.registers.set(reg, result)
     }
   }
 
@@ -231,16 +226,16 @@ export class Instructions {
     const result = value & ~(0x1 << bit)
 
     if (address) {
-      this.cpu.bus.writeByte(address, result)
+      this.emulator.bus.writeByte(address, result)
     } else {
-      this.cpu.registers.set(reg, result)
+      this.emulator.cpu.registers.set(reg, result)
     }
   }
 
   add_sp(target: 'sp' | 'hl', value: number) {
     value = convertTwosComplement(value)
 
-    const sp = this.cpu.registers.get('sp')
+    const sp = this.emulator.cpu.registers.get('sp')
     const result = this._add(sp, value, false, true, true)
     result.zero = false
     this._setWithFlags(target, result)
@@ -250,10 +245,10 @@ export class Instructions {
     const reg = this._is16bit(source) && !reference ? 'hl' : 'a'
     const { value } = this.getValueAndAddress(source, reference)
 
-    const result = this._add(this.cpu.registers.get(reg), value, withCarry, reg === 'hl')
+    const result = this._add(this.emulator.cpu.registers.get(reg), value, withCarry, reg === 'hl')
 
     if (reg === 'hl') {
-      result.zero = this.cpu.registers.getFlag('Zero')
+      result.zero = this.emulator.cpu.registers.getFlag('Zero')
     }
 
     this._setWithFlags(reg, result)
@@ -267,10 +262,10 @@ export class Instructions {
     const { value } = this.getValueAndAddress(source, reference)
 
     if (this._is16bit(source) && !reference) {
-      const result = this._subtract(this.cpu.registers.get('hl'), value, withCarry, true)
+      const result = this._subtract(this.emulator.cpu.registers.get('hl'), value, withCarry, true)
       this._setWithFlags('hl', result)
     } else {
-      const result = this._subtract(this.cpu.registers.get('a'), value, withCarry)
+      const result = this._subtract(this.emulator.cpu.registers.get('a'), value, withCarry)
       this._setWithFlags('a', result)
     }
   }
@@ -282,39 +277,39 @@ export class Instructions {
   and(source: ArithmeticRegisterName | number, reference?: boolean) {
     const { value } = this.getValueAndAddress(source, reference)
 
-    const result = this.cpu.registers.get('a') & value
-    this.cpu.registers.setFlag('Zero', result === 0)
-    this.cpu.registers.setFlag('Subtraction', false)
-    this.cpu.registers.setFlag('HalfCarry', true)
-    this.cpu.registers.setFlag('Carry', false)
-    this.cpu.registers.set('a', result)
+    const result = this.emulator.cpu.registers.get('a') & value
+    this.emulator.cpu.registers.setFlag('Zero', result === 0)
+    this.emulator.cpu.registers.setFlag('Subtraction', false)
+    this.emulator.cpu.registers.setFlag('HalfCarry', true)
+    this.emulator.cpu.registers.setFlag('Carry', false)
+    this.emulator.cpu.registers.set('a', result)
   }
 
   xor(source: ArithmeticRegisterName | number, reference?: boolean) {
     const { value } = this.getValueAndAddress(source, reference)
 
-    const result = this.cpu.registers.get('a') ^ value
-    this.cpu.registers.setFlag('Zero', result === 0)
-    this.cpu.registers.setFlag('Subtraction', false)
-    this.cpu.registers.setFlag('HalfCarry', false)
-    this.cpu.registers.setFlag('Carry', false)
-    this.cpu.registers.set('a', result)
+    const result = this.emulator.cpu.registers.get('a') ^ value
+    this.emulator.cpu.registers.setFlag('Zero', result === 0)
+    this.emulator.cpu.registers.setFlag('Subtraction', false)
+    this.emulator.cpu.registers.setFlag('HalfCarry', false)
+    this.emulator.cpu.registers.setFlag('Carry', false)
+    this.emulator.cpu.registers.set('a', result)
   }
 
   or(source: ArithmeticRegisterName | number, reference?: boolean) {
     const { value } = this.getValueAndAddress(source, reference)
 
-    const result = this.cpu.registers.get('a') | value
-    this.cpu.registers.setFlag('Zero', result === 0)
-    this.cpu.registers.setFlag('Subtraction', false)
-    this.cpu.registers.setFlag('HalfCarry', false)
-    this.cpu.registers.setFlag('Carry', false)
-    this.cpu.registers.set('a', result)
+    const result = this.emulator.cpu.registers.get('a') | value
+    this.emulator.cpu.registers.setFlag('Zero', result === 0)
+    this.emulator.cpu.registers.setFlag('Subtraction', false)
+    this.emulator.cpu.registers.setFlag('HalfCarry', false)
+    this.emulator.cpu.registers.setFlag('Carry', false)
+    this.emulator.cpu.registers.set('a', result)
   }
 
   cp(source: ArithmeticRegisterName | number, reference?: boolean) {
     const { value } = this.getValueAndAddress(source, reference)
-    const result = this._subtract(this.cpu.registers.get('a'), value, false, false)
+    const result = this._subtract(this.emulator.cpu.registers.get('a'), value, false, false)
     this._setWithFlags(null, result)
   }
 
@@ -323,12 +318,12 @@ export class Instructions {
     const { address, value } = this.getValueAndAddress(source, reference)
     const result = this._add(value, 1, false, is16Bit)
 
-    result.carry = this.cpu.registers.getFlag('Carry')
+    result.carry = this.emulator.cpu.registers.getFlag('Carry')
     if (address) {
-      this.cpu.bus.writeByte(address, result.value)
+      this.emulator.bus.writeByte(address, result.value)
       this._setWithFlags(null, result)
     } else if (is16Bit) {
-      this.cpu.registers.set(source, result.value)
+      this.emulator.cpu.registers.set(source, result.value)
     } else {
       this._setWithFlags(source, result)
     }
@@ -339,58 +334,58 @@ export class Instructions {
     const { address, value } = this.getValueAndAddress(source, reference)
     const result = this._subtract(value, 1, false, is16Bit)
 
-    result.carry = this.cpu.registers.getFlag('Carry')
+    result.carry = this.emulator.cpu.registers.getFlag('Carry')
     if (address) {
-      this.cpu.bus.writeByte(address, result.value)
+      this.emulator.bus.writeByte(address, result.value)
       this._setWithFlags(null, result)
     } else if (is16Bit) {
-      this.cpu.registers.set(source, result.value)
+      this.emulator.cpu.registers.set(source, result.value)
     } else {
       this._setWithFlags(source, result)
     }
   }
 
   cpl() {
-    this.cpu.registers.set('a', this.cpu.registers.get('a') ^ 0xff)
-    this.cpu.registers.setFlag('Subtraction', true)
-    this.cpu.registers.setFlag('HalfCarry', true)
+    this.emulator.cpu.registers.set('a', this.emulator.cpu.registers.get('a') ^ 0xff)
+    this.emulator.cpu.registers.setFlag('Subtraction', true)
+    this.emulator.cpu.registers.setFlag('HalfCarry', true)
   }
 
   daa() {
-    let value = this.cpu.registers.get('a')
+    let value = this.emulator.cpu.registers.get('a')
 
-    if (!this.cpu.registers.getFlag('Subtraction')) {
-      if (this.cpu.registers.getFlag('HalfCarry') || (value & 0xf) > 9) {
+    if (!this.emulator.cpu.registers.getFlag('Subtraction')) {
+      if (this.emulator.cpu.registers.getFlag('HalfCarry') || (value & 0xf) > 9) {
         value += 0x06
       }
 
       // Check for carry immediately after half-carry adjustment.
       if (value > 0xff) {
-        this.cpu.registers.setFlag('Carry', true)
+        this.emulator.cpu.registers.setFlag('Carry', true)
       }
 
-      if (this.cpu.registers.getFlag('Carry') || value > 0x9f) {
+      if (this.emulator.cpu.registers.getFlag('Carry') || value > 0x9f) {
         value += 0x60
       }
     } else {
-      if (this.cpu.registers.getFlag('HalfCarry')) {
+      if (this.emulator.cpu.registers.getFlag('HalfCarry')) {
         value = (value - 6) & 0xff
       }
 
-      if (this.cpu.registers.getFlag('Carry')) {
+      if (this.emulator.cpu.registers.getFlag('Carry')) {
         value -= 0x60
       }
     }
 
     if ((value & 0x100) == 0x100) {
-      this.cpu.registers.setFlag('Carry', true)
+      this.emulator.cpu.registers.setFlag('Carry', true)
     }
 
     value &= 0xff
 
-    this.cpu.registers.setFlag('HalfCarry', false)
-    this.cpu.registers.setFlag('Zero', value === 0)
-    this.cpu.registers.set('a', value)
+    this.emulator.cpu.registers.setFlag('HalfCarry', false)
+    this.emulator.cpu.registers.setFlag('Zero', value === 0)
+    this.emulator.cpu.registers.set('a', value)
   }
 
   rlca(reference?: boolean) {
@@ -398,7 +393,7 @@ export class Instructions {
       direction: 'left',
       reference,
     })
-    this.cpu.registers.setFlag('Zero', false)
+    this.emulator.cpu.registers.setFlag('Zero', false)
   }
 
   rla(reference?: boolean) {
@@ -407,7 +402,7 @@ export class Instructions {
       throughCarry: true,
       reference,
     })
-    this.cpu.registers.setFlag('Zero', false)
+    this.emulator.cpu.registers.setFlag('Zero', false)
   }
 
   rrca(reference?: boolean) {
@@ -415,7 +410,7 @@ export class Instructions {
       direction: 'right',
       reference,
     })
-    this.cpu.registers.setFlag('Zero', false)
+    this.emulator.cpu.registers.setFlag('Zero', false)
   }
 
   rra(reference?: boolean) {
@@ -424,7 +419,7 @@ export class Instructions {
       throughCarry: true,
       reference,
     })
-    this.cpu.registers.setFlag('Zero', false)
+    this.emulator.cpu.registers.setFlag('Zero', false)
   }
 
   rlc(reg: ArithmeticRegisterName, reference?: boolean) {
@@ -487,7 +482,7 @@ export class Instructions {
 
     let result: number
 
-    if (this.cpu.registers.is16Bit(reg) && !reference) {
+    if (this.emulator.cpu.registers.is16Bit(reg) && !reference) {
       const low = value & 0xff
       const high = (value >> 8) & 0xff
       result = (low << 8) | high
@@ -498,14 +493,14 @@ export class Instructions {
     }
 
     if (address) {
-      this.cpu.bus.writeByte(address, result)
+      this.emulator.bus.writeByte(address, result)
     } else {
-      this.cpu.registers.set(reg, result)
+      this.emulator.cpu.registers.set(reg, result)
     }
-    this.cpu.registers.setFlag('Carry', false)
-    this.cpu.registers.setFlag('Subtraction', false)
-    this.cpu.registers.setFlag('HalfCarry', false)
-    this.cpu.registers.setFlag('Zero', result === 0)
+    this.emulator.cpu.registers.setFlag('Carry', false)
+    this.emulator.cpu.registers.setFlag('Subtraction', false)
+    this.emulator.cpu.registers.setFlag('HalfCarry', false)
+    this.emulator.cpu.registers.setFlag('Zero', result === 0)
   }
 
   jp(value?: Uint8Array | number, mode?: JumpMode | null, relative?: boolean) {
@@ -514,23 +509,23 @@ export class Instructions {
     if (value !== undefined) {
       address = uInt8ArrayToNumber(value)
     } else {
-      address = this.cpu.registers.get('hl')
+      address = this.emulator.cpu.registers.get('hl')
     }
 
     if (relative) {
-      const pc = this.cpu.registers.get('pc')
+      const pc = this.emulator.cpu.registers.get('pc')
       address = (pc + convertTwosComplement(address)) & 0xffff
     }
 
     if (
-      (mode === JumpMode.nz && !this.cpu.registers.getFlag('Zero')) ||
-      (mode === JumpMode.z && this.cpu.registers.getFlag('Zero')) ||
-      (mode === JumpMode.nc && !this.cpu.registers.getFlag('Carry')) ||
-      (mode === JumpMode.c && this.cpu.registers.getFlag('Carry')) ||
+      (mode === JumpMode.nz && !this.emulator.cpu.registers.getFlag('Zero')) ||
+      (mode === JumpMode.z && this.emulator.cpu.registers.getFlag('Zero')) ||
+      (mode === JumpMode.nc && !this.emulator.cpu.registers.getFlag('Carry')) ||
+      (mode === JumpMode.c && this.emulator.cpu.registers.getFlag('Carry')) ||
       mode === undefined ||
       mode === null
     ) {
-      this.cpu.registers.set('pc', address)
+      this.emulator.cpu.registers.set('pc', address)
       return address
     }
   }
@@ -542,7 +537,7 @@ export class Instructions {
     if (opts.source === 'd8' || opts.source === 'd16') {
       bytes = value
     } else {
-      bytes = this.cpu.registers.getUint8Array(opts.source as RegisterName)
+      bytes = this.emulator.cpu.registers.getUint8Array(opts.source as RegisterName)
     }
 
     if (opts.refSource) {
@@ -552,28 +547,28 @@ export class Instructions {
         address += 0xff00
       }
 
-      bytes = this.cpu.bus.readBytes(address, 1)
+      bytes = this.emulator.bus.readBytes(address, 1)
     }
 
     if (opts.target === 'd16') {
       target = uInt8ArrayToNumber(value)
     } else if (opts.refTarget && opts.target === 'c') {
-      target = 0xff00 + this.cpu.registers.get('c')
+      target = 0xff00 + this.emulator.cpu.registers.get('c')
     } else {
       target = opts.target
     }
 
     if (typeof target === 'number' || opts.refTarget) {
       const destValue = this._getValue(target)
-      this.cpu.bus.writeBytes(destValue, Array.from(bytes))
+      this.emulator.bus.writeBytes(destValue, Array.from(bytes))
     } else {
-      this.cpu.registers.setUint8Array(target, bytes)
+      this.emulator.cpu.registers.setUint8Array(target, bytes)
     }
 
     if (opts.incHl) {
-      this.cpu.registers.set('hl', this.cpu.registers.get('hl') + 1)
+      this.emulator.cpu.registers.set('hl', this.emulator.cpu.registers.get('hl') + 1)
     } else if (opts.decHl) {
-      this.cpu.registers.set('hl', this.cpu.registers.get('hl') - 1)
+      this.emulator.cpu.registers.set('hl', this.emulator.cpu.registers.get('hl') - 1)
     }
   }
 
@@ -582,29 +577,29 @@ export class Instructions {
     const address = 0xff00 + offset
 
     if (toA) {
-      this.cpu.registers.set('a', this.cpu.bus.readByte(address))
+      this.emulator.cpu.registers.set('a', this.emulator.bus.readByte(address))
     } else {
-      this.cpu.bus.writeByte(address, this.cpu.registers.get('a'))
+      this.emulator.bus.writeByte(address, this.emulator.cpu.registers.get('a'))
     }
   }
 
   push(reg: GpSixteenBitRegisterName | 'pc' | number) {
-    const sp = this.cpu.registers.get('sp')
+    const sp = this.emulator.cpu.registers.get('sp')
     const value = this._getValue(reg)
 
-    this.cpu.bus.writeByte(sp - 1, value >> 8)
-    this.cpu.bus.writeByte(sp - 2, value & 0xff)
+    this.emulator.bus.writeByte(sp - 1, value >> 8)
+    this.emulator.bus.writeByte(sp - 2, value & 0xff)
 
-    this.cpu.registers.decStackPointer()
+    this.emulator.cpu.registers.decStackPointer()
   }
 
   pop(reg: GpSixteenBitRegisterName) {
-    this.cpu.registers.set(reg, this.readStack())
-    this.cpu.registers.incStackPointer()
+    this.emulator.cpu.registers.set(reg, this.readStack())
+    this.emulator.cpu.registers.incStackPointer()
   }
 
   call(address: Uint8Array, mode?: JumpMode | null) {
-    const pc = this.cpu.registers.get('pc')
+    const pc = this.emulator.cpu.registers.get('pc')
     const newPc = this.jp(address, mode)
 
     if (newPc !== undefined) {
@@ -619,30 +614,30 @@ export class Instructions {
     const newPc = this.jp(address, mode)
 
     if (newPc !== undefined) {
-      this.cpu.registers.incStackPointer()
+      this.emulator.cpu.registers.incStackPointer()
     }
 
     return newPc
   }
 
   scf() {
-    this.cpu.registers.setFlag('Carry', true)
-    this.cpu.registers.setFlag('Subtraction', false)
-    this.cpu.registers.setFlag('HalfCarry', false)
+    this.emulator.cpu.registers.setFlag('Carry', true)
+    this.emulator.cpu.registers.setFlag('Subtraction', false)
+    this.emulator.cpu.registers.setFlag('HalfCarry', false)
   }
 
   ccf() {
-    this.cpu.registers.setFlag('Subtraction', false)
-    this.cpu.registers.setFlag('HalfCarry', false)
-    this.cpu.registers.setFlag('Carry', !this.cpu.registers.getFlag('Carry'))
+    this.emulator.cpu.registers.setFlag('Subtraction', false)
+    this.emulator.cpu.registers.setFlag('HalfCarry', false)
+    this.emulator.cpu.registers.setFlag('Carry', !this.emulator.cpu.registers.getFlag('Carry'))
   }
 
   ei() {
-    this.cpu.setIME(true)
+    this.emulator.cpu.setIME(true)
   }
 
   di() {
-    this.cpu.setIME(false)
+    this.emulator.cpu.setIME(false)
   }
 
   reti() {
@@ -652,7 +647,7 @@ export class Instructions {
 
   rst(offset: Uint8Array | number) {
     const value = uInt8ArrayToNumber(offset)
-    this.push(this.cpu.registers.get('pc'))
+    this.push(this.emulator.cpu.registers.get('pc'))
     return this.jp(value)
   }
 }

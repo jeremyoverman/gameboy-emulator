@@ -14,7 +14,7 @@ const SettingsPanel = ({
   }
 
   const setGameRom = (file: File) => {
-    emulator?.cpu.bus.loadRomFile(file);
+    emulator?.bus.loadRomFile(file);
   }
 
   const handleToggleBootRom = () => {

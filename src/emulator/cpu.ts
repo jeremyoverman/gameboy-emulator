@@ -1,49 +1,18 @@
-import { Emitter, EventMap } from '.'
-import {
-  CYCLES_PER_DIV,
-  CYCLES_PER_SCANLINE,
-  CYCLES_PER_SECOND,
-  FPS,
-  INTERRUPTS,
-  INTERRUPT_PRIORITY,
-  BUS_REGISTERS,
-  TIMER_FLAGS,
-  TMA,
-} from './constants'
-import { Graphics } from './graphics'
+import { Emulator } from './emulator'
+import { INTERRUPTS, INTERRUPT_PRIORITY } from './constants'
 import { Instructions } from './instructions'
-import { Bus } from './bus'
 import { OpCodes } from './opcodes'
 import { Registers } from './registers'
-import { OpCodeDefinition } from './types/cpu'
-import { CPUEventMap } from './types/events'
-import { Interrupt } from './types/memory'
+import { OpCodeDefinition } from './types'
+import { Interrupt } from './types'
 
 export class CPU {
-  // Emulator
-  emit: Emitter<keyof CPUEventMap>
-  paused: boolean = true
-
-  // Targets
-  targetFps: number = FPS
-  targetCyclesPerSecond: number = CYCLES_PER_SECOND
-  targetCyclesPerFrame: number = 0
-
-  // Intervals
-  vblankClockInterval: NodeJS.Timeout | undefined
+  emulator: Emulator
 
   // Components
-  graphics: Graphics
   registers: Registers
   instructions: Instructions
-  bus: Bus
   opcodes: OpCodes
-
-  // Counters
-  cycles: number = 0
-  scanlineCycles: number = 0
-  divCycles: number = 0
-  timaCycles: number = 0
 
   // CPU Control flags
   halted: boolean = false
@@ -53,70 +22,15 @@ export class CPU {
   interrupMasterEnabled: boolean = true
   interruptEnable: boolean = false
 
-  constructor(emit: Emitter<keyof EventMap>) {
-    this.emit = emit
-    this.instructions = new Instructions(this)
-    this.opcodes = new OpCodes(this)
+  constructor(emulator: Emulator) {
+    this.emulator = emulator
     this.registers = new Registers()
-    this.bus = new Bus()
-    this.graphics = new Graphics(this, emit)
-
-    this.setCyclesPerFrame()
+    this.instructions = new Instructions(emulator)
+    this.opcodes = new OpCodes(this)
   }
 
   interrupt(interrupt: Interrupt) {
-    this.bus.setInterruptFlag(interrupt, true)
-  }
-
-  private addCycles(cycles: number) {
-    this.cycles += cycles
-    this.scanlineCycles += cycles
-    this.divCycles += cycles
-    this.timaCycles += cycles
-  }
-
-  private setCyclesPerFrame() {
-    this.targetCyclesPerFrame = this.targetCyclesPerSecond / this.targetFps
-  }
-
-  pause() {
-    if (this.vblankClockInterval) {
-      clearInterval(this.vblankClockInterval)
-      this.paused = true
-      this.emit('pause')
-    } else {
-      throw new Error('No vblank clock interval to pause!')
-    }
-  }
-
-  resume() {
-    this.vblankClock()
-    this.paused = false
-    this.emit('resume')
-  }
-
-  vblankClock() {
-    this.vblankClockInterval = setInterval(() => {
-      try {
-        this.bus.setInterruptFlag('vblank', true)
-        this.executeFrame()
-        this.emit('vblank')
-        this.graphics.render()
-      } catch (e) {
-        console.error('error executing at pc', this.registers.get('pc').toString(16), e)
-        this.pause()
-      }
-    }, 1000 / this.targetFps)
-  }
-
-  executeFrame() {
-    this.cycles = 0
-    while (this.cycles < this.targetCyclesPerFrame) {
-      if (this.paused) {
-        break
-      }
-      this.step()
-    }
+    this.emulator.bus.setInterruptFlag(interrupt, true)
   }
 
   handleInterrupt() {
@@ -127,8 +41,8 @@ export class CPU {
     let jumpAddress: number | undefined
 
     INTERRUPT_PRIORITY.some((interrupt) => {
-      if (this.bus.getInterruptFlag(interrupt)) {
-        this.bus.setInterruptFlag(interrupt, false)
+      if (this.emulator.bus.getInterruptFlag(interrupt)) {
+        this.emulator.bus.setInterruptFlag(interrupt, false)
         jumpAddress = INTERRUPTS[interrupt].jump
         return true
       }
@@ -137,43 +51,13 @@ export class CPU {
     return jumpAddress
   }
 
-  updateTimers() {
-    if (this.divCycles >= CYCLES_PER_DIV) {
-      this.divCycles -= CYCLES_PER_DIV
-      this.bus.div = (this.bus.div + 1) & 0xffff
-    }
-
-    const tac = this.bus.readByte(BUS_REGISTERS.tac)
-    if (tac !== 0) {
-      console.log(tac.toString(2).padStart(3, '0'))
-    }
-    if (tac & TIMER_FLAGS.enable) {
-      const cycles = tac & TMA[tac & 0b11]
-      if (this.timaCycles >= cycles) {
-        this.timaCycles -= cycles
-        this.bus.tima = this.bus.tima + 1
-
-        if (this.bus.tima > 0xff) {
-          this.bus.tima = this.bus.readByte(BUS_REGISTERS.tma)
-          this.interrupt('timer')
-        }
-      }
-    }
-
-    if (this.scanlineCycles >= CYCLES_PER_SCANLINE) {
-      this.scanlineCycles -= CYCLES_PER_SCANLINE
-      this.graphics.incrementScanline()
-    }
-  }
-
-  step() {
+  tick() {
     const pc = this.registers.get('pc')
-    this.updateTimers()
 
     let opcode: OpCodeDefinition
     let args = new Uint8Array(0)
 
-    let instructionByte = this.bus.readByte(pc)
+    let instructionByte = this.emulator.bus.readByte(pc)
     const interruptJumpAddress = this.handleInterrupt()
 
     if (interruptJumpAddress !== undefined) {
@@ -181,13 +65,13 @@ export class CPU {
       opcode = this.opcodes.opcodes[instructionByte]
       args = new Uint8Array([interruptJumpAddress & 0xff, (interruptJumpAddress >> 8) & 0xff])
     } else if (instructionByte === 0xcb) {
-      instructionByte = this.bus.readByte((pc + 1) & 0xffff)
+      instructionByte = this.emulator.bus.readByte((pc + 1) & 0xffff)
       opcode = this.opcodes.prefixOpcodes[instructionByte]
     } else {
       opcode = this.opcodes.opcodes[instructionByte]
       const bytes = opcode?.length !== undefined ? opcode.length : 1
       // TODO: This won't handle wrapping
-      args = this.bus.readBytes((pc + 1) & 0xffff, bytes - 1)
+      args = this.emulator.bus.readBytes((pc + 1) & 0xffff, bytes - 1)
     }
 
     if (!opcode) {
@@ -219,12 +103,12 @@ export class CPU {
       // extra cycles to the total. The only opcodes that have
       // multiple cycles are branches.
       if (result !== undefined) {
-        this.addCycles(opcode.cycles[1])
+        this.emulator.clock.addCycles(opcode.cycles[1])
       } else {
-        this.addCycles(opcode.cycles[0])
+        this.emulator.clock.addCycles(opcode.cycles[0])
       }
     } else {
-      this.addCycles(opcode.cycles)
+      this.emulator.clock.addCycles(opcode.cycles)
     }
   }
 

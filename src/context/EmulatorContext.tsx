@@ -1,6 +1,7 @@
 import React, { createContext, useEffect } from "react";
-import { Emulator, EventMap } from '../emulator';
+import { Emulator } from '../emulator/emulator';
 import useFile from "../hooks/useFile";
+import { EventMap } from "../emulator/types";
 
 export type LCD = {
   data: Uint8ClampedArray;
@@ -14,11 +15,13 @@ interface EmulatorContextType {
   vblankCounter: number;
   lcd: LCD;
   useBootRom: boolean;
+  fps: number;
   reset: () => void;
   setUseBootRom: (enabled: boolean) => void;
 }
 
 const initialValue: EmulatorContextType = {
+  fps: 0,
   useBootRom: true,
   paused: true,
   vblankCounter: 0,
@@ -41,6 +44,7 @@ export const EmulatorProvider = ({
   const [paused, setPaused] = React.useState(initialValue.paused);
   const [vblankCounter, setVblankCounter] = React.useState(initialValue.vblankCounter);
   const [useBootRom, setUseBootRom] = React.useState(initialValue.useBootRom);
+  const [fps, setFps] = React.useState(0);
 
   const bootrom = useFile('bootrom');
   const gamerom = useFile('gamerom');
@@ -58,7 +62,7 @@ export const EmulatorProvider = ({
     }
 
     if (gamerom?.file) {
-      emulator?.cpu.bus.loadRomFile(gamerom.file);
+      emulator?.bus.loadRomFile(gamerom.file);
     }
   }
 
@@ -82,16 +86,18 @@ export const EmulatorProvider = ({
         setVblankCounter((prev) => prev + 1);
       },
       pause: () => {
-        setPaused(emulator.cpu.paused)
+        setPaused(emulator.clock.paused)
       },
       resume: () => {
-        setPaused(emulator.cpu.paused)
+        setPaused(emulator.clock.paused)
       },
       render: () => {
+        setFps(emulator.ppu.fps);
+
         setLcd({
-          width: emulator.cpu.graphics.width,
-          height: emulator.cpu.graphics.height,
-          data: emulator.cpu.graphics.lcdBuffer,
+          width: emulator.ppu.width,
+          height: emulator.ppu.height,
+          data: emulator.ppu.lcdBuffer,
         });
       },
     }
@@ -106,7 +112,7 @@ export const EmulatorProvider = ({
       emulator.on((event as keyof typeof handlers), handler);
     });
 
-    emulator.cpu.graphics.render();
+    emulator.ppu.render();
 
     return () => {
       Object.keys(handlers).forEach((event) => {
@@ -129,7 +135,8 @@ export const EmulatorProvider = ({
       lcd,
       reset,
       useBootRom,
-      setUseBootRom
+      setUseBootRom,
+      fps
     }}>
       {children}
     </EmulatorContext.Provider>

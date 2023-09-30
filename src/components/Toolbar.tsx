@@ -18,14 +18,14 @@ const Toolbar = () => {
 
   const handleRun = () => {
     if (paused) {
-      emulator?.cpu.resume();
+      emulator?.clock.resume();
     } else {
-      emulator?.cpu.pause();
+      emulator?.clock.pause();
     }
   }
 
   const handleStep = () => {
-    emulator?.cpu.step();
+    emulator?.cpu.tick();
   }
 
   const handleReset = () => {

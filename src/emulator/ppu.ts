@@ -1,50 +1,96 @@
-import { Emitter } from '.'
-import { HEIGHT, BUS_REGISTERS, TILE_WIDTH, WIDTH } from './constants'
-import { CPU } from './cpu'
-import { ColorMap, PPUEventMap } from './types/graphics'
+import { Emitter, Emulator } from './emulator'
+import { LCD_HEIGHT, BUS_REGISTERS, TILE_WIDTH, LCD_WIDTH, DOTS_PER_SCANLINE, FRAME_HEIGHT } from './constants'
+import { ColorMap } from './types'
 import { convertTwosComplement } from './utils'
+import { PPUEventMap } from './types'
 
-export class Graphics {
-  cpu: CPU
+export class PPU {
+  emulator: Emulator
   emit: Emitter<keyof PPUEventMap>
 
+  // FPS
+  fps: number = 0
+  fpsStart: number = Date.now()
+
+  // Counters
+  dot: number = 0
+  frames: number = 0
+
+  // Display
   scale: number = 4
-  width: number = WIDTH
-  height: number = HEIGHT
+  width: number = LCD_WIDTH
+  height: number = LCD_HEIGHT
 
+  // Cache
   colorMapCache: Record<string, ColorMap> = {}
-  graphicsBuffer: Uint8Array = new Uint8Array(WIDTH * HEIGHT * 4)
-  lcdBuffer: Uint8ClampedArray = new Uint8ClampedArray(WIDTH * this.scale * HEIGHT * this.scale * 4)
 
-  // prettier-ignore
-  palette: number[] = [
-    0xe0dfd3,
-    0x807d6f,
-    0x473f37,
-    0x241914,
-  ]
+  // Buffers
+  graphicsBuffer: Uint8Array = new Uint8Array(LCD_WIDTH * LCD_HEIGHT * 4)
+  lcdBuffer: Uint8ClampedArray = new Uint8ClampedArray(LCD_WIDTH * this.scale * LCD_HEIGHT * this.scale * 4)
 
-  constructor(cpu: CPU, emit: Emitter<keyof PPUEventMap>) {
-    this.cpu = cpu
-    this.emit = emit
+  palette: number[] = [0xe0dfd3, 0x807d6f, 0x473f37, 0x241914]
+
+  constructor(emulator: Emulator) {
+    this.emulator = emulator
+    this.emit = emulator.emit
 
     this.setScale(this.scale)
-    this.cpu.bus.writeByte(BUS_REGISTERS.stat, 0b00000001)
+    this.emulator.bus.writeByte(BUS_REGISTERS.stat, 0b00000001)
+  }
+
+  resetFrames() {
+    this.frames = 0
   }
 
   setScale(scale: number) {
     this.scale = scale
     this.width = this.width * scale
     this.height = this.height * scale
-    this.lcdBuffer = new Uint8ClampedArray(WIDTH * this.scale * HEIGHT * this.scale * 4)
+    this.lcdBuffer = new Uint8ClampedArray(LCD_WIDTH * this.scale * LCD_HEIGHT * this.scale * 4)
 
     this.emit('lcdBufferReady')
   }
 
+  tick() {
+    for (; this.dot < this.emulator.clock.dotCycles; this.dot += 1) {
+      const scanline = Math.floor(this.dot / DOTS_PER_SCANLINE)
+      if (this.dot % DOTS_PER_SCANLINE === 0) {
+        this.emulator.bus.writeByte(BUS_REGISTERS.ly, scanline)
+      }
+
+      if (this.dot === LCD_HEIGHT * DOTS_PER_SCANLINE) {
+        this.emulator.cpu.interrupt('vblank')
+        this.emit('vblank')
+        this.render()
+      }
+
+      if (scanline === FRAME_HEIGHT) {
+        this.dot = 0
+        this.emulator.clock.dotCycles = 0
+      }
+    }
+  }
+
+  calculateFps() {
+    // Calculate FPS once per second:
+    if (Date.now() - this.fpsStart >= 1000) {
+      const currentTime = Date.now()
+      const elapsedTime = (currentTime - this.fpsStart) / 1000 // in seconds
+      this.fps = this.frames / elapsedTime
+
+      // Reset counters for the next second:
+      this.fpsStart = currentTime
+      this.frames = 0
+    }
+  }
+
   render() {
-    if (!this.cpu.bus.getLcdFlag('enable')) {
+    this.frames += 1
+    if (!this.emulator.bus.getLcdFlag('enable')) {
       return
     }
+
+    this.calculateFps()
 
     this.renderBackground()
     this.renderObjects()
@@ -53,13 +99,13 @@ export class Graphics {
   }
 
   renderBackground() {
-    const index = this.cpu.bus.getLcdFlag('bgTileMap') ? 0x9c00 : 0x9800
+    const index = this.emulator.bus.getLcdFlag('bgTileMap') ? 0x9c00 : 0x9800
 
     for (let idx = 0; idx < 32 * 32; idx += 1) {
       try {
-        const scx = this.cpu.bus.readByte(BUS_REGISTERS.scx)
-        const scy = this.cpu.bus.readByte(BUS_REGISTERS.scy)
-        const tile = this.cpu.bus.memory[index + idx]
+        const scx = this.emulator.bus.readByte(BUS_REGISTERS.scx)
+        const scy = this.emulator.bus.readByte(BUS_REGISTERS.scy)
+        const tile = this.emulator.bus.memory[index + idx]
 
         this.renderTile(tile, (idx % 32) * 8 - scx, Math.floor(idx / 32) * 8 - scy)
       } catch (e) {
@@ -72,10 +118,10 @@ export class Graphics {
     const index = BUS_REGISTERS.oam
 
     for (let idx = 0; idx < 40; idx += 1) {
-      const y = this.cpu.bus.memory[index + idx * 4]
-      const x = this.cpu.bus.memory[index + idx * 4 + 1]
-      const tile = this.cpu.bus.memory[index + idx * 4 + 2]
-      const flags = this.cpu.bus.memory[index + idx * 4 + 3]
+      const y = this.emulator.bus.memory[index + idx * 4]
+      const x = this.emulator.bus.memory[index + idx * 4 + 1]
+      const tile = this.emulator.bus.memory[index + idx * 4 + 2]
+      // const flags = this.emulator.bus.memory[index + idx * 4 + 3]
 
       if (x && y) {
         this.renderTile(tile, x - 8, y - 16)
@@ -106,7 +152,7 @@ export class Graphics {
     const scaledRow = new Uint8Array(row.length)
 
     let scaledColIdx = 0
-    for (let colIdx = 0; colIdx < WIDTH; colIdx += 1) {
+    for (let colIdx = 0; colIdx < LCD_WIDTH; colIdx += 1) {
       const pixel = row.slice(colIdx * 4, colIdx * 4 + 4)
 
       for (let scale = 0; scale < this.scale; scale += 1) {
@@ -123,7 +169,7 @@ export class Graphics {
     const scaledBuffer = new Uint8Array(this.lcdBuffer.length)
 
     let scaledRowIdx = 0
-    for (let rowIdx = 0; rowIdx < HEIGHT; rowIdx += 1) {
+    for (let rowIdx = 0; rowIdx < LCD_HEIGHT; rowIdx += 1) {
       const row = this.scaleRow(rowIdx, rowWidth)
       for (let scale = 0; scale < this.scale; scale += 1) {
         scaledBuffer.set(row, scaledRowIdx * rowWidth)
@@ -134,27 +180,17 @@ export class Graphics {
     this.lcdBuffer.set(scaledBuffer, 0)
   }
 
-  incrementScanline() {
-    let ly = this.cpu.bus.readByte(BUS_REGISTERS.ly) + 1
-
-    if (ly > 153) {
-      ly = 0
-    } else if (ly === WIDTH) {
-      this.cpu.interrupt('vblank')
-    }
-
-    this.cpu.bus.writeByte(BUS_REGISTERS.ly, ly)
-  }
+  incrementScanline() {}
 
   getTileData(tileIndex: number) {
-    const bgWindowTileData = this.cpu.bus.getLcdFlag('bgWindowTileData')
+    const bgWindowTileData = this.emulator.bus.getLcdFlag('bgWindowTileData')
     const bgIndex = bgWindowTileData ? 0x8000 : 0x9000
 
     if (!bgWindowTileData) {
       tileIndex = convertTwosComplement(tileIndex)
     }
 
-    return this.cpu.bus.readBytes(bgIndex + tileIndex * 16, 16)
+    return this.emulator.bus.readBytes(bgIndex + tileIndex * 16, 16)
   }
 
   tileToColorMap(tile: Uint8Array) {
@@ -204,7 +240,7 @@ export class Graphics {
     const pixels = new Uint8Array(8 * 8 * 4)
     let pos = 0
 
-    const palette = this.convertPaletteToRGB(this.cpu.bus.readByte(0xff47))
+    const palette = this.convertPaletteToRGB(this.emulator.bus.readByte(0xff47))
 
     map.forEach((row) => {
       row.forEach((col) => {

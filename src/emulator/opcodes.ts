@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { CPU } from './cpu'
 import { JumpMode } from './instructions'
-import { OpCodeDefinition } from './types/cpu'
+import { OpCodeDefinition } from './types';
 
 export class OpCodes {
   private cpu: CPU
