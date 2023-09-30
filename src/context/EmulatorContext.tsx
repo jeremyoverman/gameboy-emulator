@@ -39,7 +39,7 @@ export const EmulatorProvider = ({
   useEffect(() => {
     if (!emulator) {
       const emulatorInst = new Emulator();
-      // emulatorInst.bootstrapWithoutRom();
+      emulatorInst.bootstrapWithoutRom();
       setEmulator(emulatorInst);
     }
 

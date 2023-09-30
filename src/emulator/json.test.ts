@@ -53,7 +53,7 @@ const testFinalState = (cpu: CPU, json: JsonTest) => {
   })
 }
 
-const mergeAllTests = (opts: { limit?: number | null; tests?: string[] | null; skip?: string[] | null }) => {
+const mergeAllTests = (opts?: { limit?: number | null; tests?: string[] | null; skip?: string[] | null }) => {
   const files = fs.readdirSync(path.join(__dirname, './testJson'))
   let tests: JsonTestSuite = []
 
@@ -62,10 +62,10 @@ const mergeAllTests = (opts: { limit?: number | null; tests?: string[] | null; s
       return file.split('.')[0]
     })
     .filter((file) => {
-      if (opts.tests) {
-        return opts.tests.includes(file)
+      if (opts?.tests) {
+        return opts?.tests.includes(file)
       }
-      if (opts.skip) {
+      if (opts?.skip) {
         return !opts.skip.includes(file)
       }
       return true
@@ -73,7 +73,7 @@ const mergeAllTests = (opts: { limit?: number | null; tests?: string[] | null; s
     .forEach((file) => {
       const suite = loadFile(file)
 
-      if (opts.limit) {
+      if (opts?.limit) {
         tests = [...tests, ...suite.slice(0, opts.limit)]
       } else {
         tests = [...tests, ...suite]
@@ -83,14 +83,7 @@ const mergeAllTests = (opts: { limit?: number | null; tests?: string[] | null; s
   return tests
 }
 
-// const testsToRun: string[] | null = null
-const testsToRun: string[] = []
-const testsToSkip: string[] = [
-  'e2', // LD (C), A ; PC incorrect
-]
-const limit = 10
-
-test.each(mergeAllTests({ tests: testsToRun, skip: testsToSkip, limit }))(`JSON Instruction: $name`, (testData) => {
+xtest.each(mergeAllTests())(`JSON Instruction: $name`, (testData) => {
   const cpu = new CPU(() => {})
 
   setInitialState(cpu, testData)

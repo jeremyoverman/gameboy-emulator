@@ -74,9 +74,11 @@ export class Instructions {
       value: value > maxFull ? value & maxFull : value,
       carry: false,
       halfCarry: false,
-      zero: value === 0,
+      zero: false,
       subtraction: false,
     }
+
+    ret.zero = ret.value === 0
 
     if (sixteenBit && !hcLower) {
       ret.halfCarry = (((num1 & 0xfff) + (num2 & 0xfff) + (carry & 0xfff)) & 0x1000) == 0x1000
@@ -98,9 +100,11 @@ export class Instructions {
       value: value < 0 ? value & minFull : value,
       carry: false,
       halfCarry: false,
-      zero: value === 0,
+      zero: false,
       subtraction: true,
     }
+
+    ret.zero = ret.value === 0
 
     if (sixteenBit) {
       ret.halfCarry = (((num1 & 0xfff) - (num2 & 0xfff) - (carry & 0xfff)) & 0x1000) == 0x1000
@@ -233,19 +237,21 @@ export class Instructions {
 
     const sp = this.cpu.registers.get('sp')
     const result = this._add(sp, value, false, true, true)
+    result.zero = false
     this._setWithFlags(target, result)
   }
 
   add(source: ArithmeticRegisterName | number, withCarry?: boolean, reference?: boolean) {
+    const reg = this._is16bit(source) && !reference ? 'hl' : 'a'
     const { value } = this.getValueAndAddress(source, reference)
 
-    if (this._is16bit(source) && !reference) {
-      const result = this._add(this.cpu.registers.get('hl'), value, withCarry, true)
-      this._setWithFlags('hl', result)
-    } else {
-      const result = this._add(this.cpu.registers.get('a'), value, withCarry)
-      this._setWithFlags('a', result)
+    const result = this._add(this.cpu.registers.get(reg), value, withCarry, reg === 'hl')
+
+    if (reg === 'hl') {
+      result.zero = this.cpu.registers.getFlag('Zero')
     }
+
+    this._setWithFlags(reg, result)
   }
 
   adc(source: ArithmeticRegisterName | number, reference?: boolean) {
@@ -308,16 +314,15 @@ export class Instructions {
   }
 
   inc(source: ArithmeticRegisterName, reference?: boolean) {
-    const is16Bit = this._is16bit(source)
+    const is16Bit = this._is16bit(source) && !reference
     const { address, value } = this.getValueAndAddress(source, reference)
-    const result = this._add(value, 1, false, this._is16bit(source))
+    const result = this._add(value, 1, false, is16Bit)
 
     result.carry = this.cpu.registers.getFlag('Carry')
     if (address) {
       this.cpu.memory.writeByte(address, result.value)
       this._setWithFlags(null, result)
-    }
-    if (is16Bit) {
+    } else if (is16Bit) {
       this.cpu.registers.set(source, result.value)
     } else {
       this._setWithFlags(source, result)
@@ -325,16 +330,15 @@ export class Instructions {
   }
 
   dec(source: ArithmeticRegisterName, reference?: boolean) {
-    const is16Bit = this._is16bit(source)
+    const is16Bit = this._is16bit(source) && !reference
     const { address, value } = this.getValueAndAddress(source, reference)
-    const result = this._subtract(value, 1, false, this._is16bit(source))
+    const result = this._subtract(value, 1, false, is16Bit)
 
     result.carry = this.cpu.registers.getFlag('Carry')
     if (address) {
       this.cpu.memory.writeByte(address, result.value)
       this._setWithFlags(null, result)
-    }
-    if (is16Bit) {
+    } else if (is16Bit) {
       this.cpu.registers.set(source, result.value)
     } else {
       this._setWithFlags(source, result)
@@ -389,6 +393,7 @@ export class Instructions {
       direction: 'left',
       reference,
     })
+    this.cpu.registers.setFlag('Zero', false)
   }
 
   rla(reference?: boolean) {
@@ -397,6 +402,7 @@ export class Instructions {
       throughCarry: true,
       reference,
     })
+    this.cpu.registers.setFlag('Zero', false)
   }
 
   rrca(reference?: boolean) {
@@ -404,6 +410,7 @@ export class Instructions {
       direction: 'right',
       reference,
     })
+    this.cpu.registers.setFlag('Zero', false)
   }
 
   rra(reference?: boolean) {
@@ -412,6 +419,7 @@ export class Instructions {
       throughCarry: true,
       reference,
     })
+    this.cpu.registers.setFlag('Zero', false)
   }
 
   rlc(reg: ArithmeticRegisterName, reference?: boolean) {
@@ -506,7 +514,7 @@ export class Instructions {
 
     if (relative) {
       const pc = this.cpu.registers.get('pc')
-      address = pc + convertTwosComplement(address)
+      address = (pc + convertTwosComplement(address)) & 0xffff
     }
 
     if (

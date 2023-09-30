@@ -24,7 +24,7 @@ export const REGISTERS = [
 export type RegisterName = (typeof REGISTERS)[number]
 export type SpecialRegisterNames = (typeof SPECIAL_8_BIT_REGISTERS)[number]
 
-export type Flag = 'Zero' | 'Subtraction' | 'Carry' | 'HalfCarry';
+export type Flag = 'Zero' | 'Subtraction' | 'Carry' | 'HalfCarry'
 
 const FLAG_POSITIONS = {
   ['Zero']: 7,
@@ -53,7 +53,7 @@ export class Registers {
   set(reg: RegisterName, value: number) {
     if (ALL_8_BIT_REGISTERS.includes(reg as EightBitRegisterName)) {
       if (value > 0xff) {
-        value = value % 0xff - 1
+        value = value & 0xff
       }
 
       if (reg === 'f') {
@@ -63,6 +63,10 @@ export class Registers {
       this[reg as GpEightBitRegisterName] = value
     } else {
       if (SPECIAL_16_BIT_REGISTERS.includes(reg as SpecialSixteenBitRegisterName)) {
+        if (value > 0xffff) {
+          value = value & 0xffff
+        }
+
         this[reg as SpecialRegisterNames] = value
       } else {
         const [reg1, reg2] = reg.split('') as GpEightBitRegisterName[]
@@ -137,15 +141,15 @@ export class Registers {
         Subtraction: this.getFlag('Subtraction'),
         HalfCarry: this.getFlag('HalfCarry'),
         Carry: this.getFlag('Carry'),
-      }
+      },
     }
   }
 
   incStackPointer() {
-    this.set('sp', this.get('sp') + 2);
+    this.set('sp', this.get('sp') + 2)
   }
 
   decStackPointer() {
-    this.set('sp', this.get('sp') - 2);
+    this.set('sp', this.get('sp') - 2)
   }
 }
