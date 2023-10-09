@@ -112,8 +112,6 @@ export const EmulatorProvider = ({
       emulator.on((event as keyof typeof handlers), handler);
     });
 
-    emulator.ppu.render();
-
     return () => {
       Object.keys(handlers).forEach((event) => {
         const handler = handlers[event as keyof typeof handlers];

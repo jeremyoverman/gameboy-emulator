@@ -1,12 +1,13 @@
 import { Emitter, Emulator } from './emulator'
 import { LCD_HEIGHT, BUS_REGISTERS, TILE_WIDTH, LCD_WIDTH, DOTS_PER_SCANLINE, FRAME_HEIGHT } from './constants'
-import { ColorMap } from './types'
+import { ColorMap, OAMEntry } from './types'
 import { convertTwosComplement } from './utils'
 import { PPUEventMap } from './types'
 
 export class PPU {
   emulator: Emulator
   emit: Emitter<keyof PPUEventMap>
+  rendered: boolean = false
 
   // FPS
   fps: number = 0
@@ -28,18 +29,28 @@ export class PPU {
   graphicsBuffer: Uint8Array = new Uint8Array(LCD_WIDTH * LCD_HEIGHT * 4)
   lcdBuffer: Uint8ClampedArray = new Uint8ClampedArray(LCD_WIDTH * this.scale * LCD_HEIGHT * this.scale * 4)
 
+  // Palette
   palette: number[] = [0xe0dfd3, 0x807d6f, 0x473f37, 0x241914]
+  rgbPalette: Uint8Array[] = []
+
+  // OAM
+  oam: OAMEntry[] = []
 
   constructor(emulator: Emulator) {
     this.emulator = emulator
     this.emit = emulator.emit
 
     this.setScale(this.scale)
+    this.setRGBPalette()
     this.emulator.bus.writeByte(BUS_REGISTERS.stat, 0b00000001)
   }
 
   resetFrames() {
     this.frames = 0
+  }
+
+  setRGBPalette() {
+    this.rgbPalette = this.convertPaletteToRGB(this.emulator.bus.readByte(0xff47))
   }
 
   setScale(scale: number) {
@@ -52,22 +63,81 @@ export class PPU {
   }
 
   tick() {
-    for (; this.dot < this.emulator.clock.dotCycles; this.dot += 1) {
+    while (this.dot < this.emulator.clock.dotCycles) {
+      const lineDot = this.dot % DOTS_PER_SCANLINE
       const scanline = Math.floor(this.dot / DOTS_PER_SCANLINE)
-      if (this.dot % DOTS_PER_SCANLINE === 0) {
+
+      if (lineDot === 0) {
         this.emulator.bus.writeByte(BUS_REGISTERS.ly, scanline)
       }
 
+      // New Logic
+
+      // if (lineDot === 0) {
+      //   // turn off write access to OAM
+      //   const index = BUS_REGISTERS.oam
+
+      //   for (let idx = 0; idx < 40; idx += 1) {
+      //     const y = this.emulator.bus.memory[index + idx * 4]
+      //     const x = this.emulator.bus.memory[index + idx * 4 + 1]
+      //     const tile = this.emulator.bus.memory[index + idx * 4 + 2]
+      //     // const flags = this.emulator.bus.memory[index + idx * 4 + 3]
+
+      //     if (x && y) {
+      //       this.renderTile(tile, x - 8, y - 16)
+      //       // console.log(flags)
+      //     }
+      //   }
+      // }
+
+      if (lineDot == 80 && scanline < LCD_HEIGHT) {
+        this.setRGBPalette()
+        const bgMapBaseIndex = this.emulator.bus.getLcdFlag('bgTileMap') ? 0x9c00 : 0x9800
+        const scx = this.emulator.bus.readByte(BUS_REGISTERS.scx)
+        const scy = this.emulator.bus.readByte(BUS_REGISTERS.scy)
+        const pixelsPerRow = this.width * 4
+        const bgMapRowIdx = 32 * Math.floor((scanline + scy) / 8)
+        for (let bgMapColIdx = 0; bgMapColIdx < 32; bgMapColIdx += 1) {
+          try {
+            const rowPos = bgMapColIdx * TILE_WIDTH * this.scale + scx
+            if (rowPos / 4 + 32 > this.width) {
+              break
+            }
+            const tileIndex = this.emulator.bus.memory[bgMapBaseIndex + bgMapRowIdx + bgMapColIdx]
+            const tileRowIdx = (scanline + scy) % 8
+            const scaledPixels = new Uint8Array(TILE_WIDTH * this.scale)
+            for (let pixelIdx = 0; pixelIdx < 8; pixelIdx += 1) {
+              const pixel = this.getTilePixel(tileIndex, pixelIdx, tileRowIdx)
+              for (let scaleIdx = 0; scaleIdx < this.scale; scaleIdx += 1) {
+                scaledPixels.set(pixel, pixelIdx * 4 * this.scale + scaleIdx * 4)
+              }
+            }
+            for (let scaleYIdx = 0; scaleYIdx < this.scale; scaleYIdx += 1) {
+              const lcdRowIdx = scanline * pixelsPerRow * this.scale + scaleYIdx * pixelsPerRow
+              this.lcdBuffer.set(scaledPixels, lcdRowIdx + rowPos)
+            }
+          } catch (e) {
+            console.log(e)
+          }
+        }
+      }
+
+      // End New Logic
+
       if (this.dot === LCD_HEIGHT * DOTS_PER_SCANLINE) {
+        this.frames += 1
+        this.calculateFps()
         this.emulator.cpu.interrupt('vblank')
         this.emit('vblank')
-        this.render()
+        this.emit('render')
       }
 
       if (scanline === FRAME_HEIGHT) {
         this.dot = 0
         this.emulator.clock.dotCycles = 0
       }
+
+      this.dot += 1
     }
   }
 
@@ -84,104 +154,6 @@ export class PPU {
     }
   }
 
-  render() {
-    this.frames += 1
-    if (!this.emulator.bus.getLcdFlag('enable')) {
-      return
-    }
-
-    this.calculateFps()
-
-    this.renderBackground()
-    this.renderObjects()
-    this.scaleLcdBuffer()
-    this.emit('render')
-  }
-
-  renderBackground() {
-    const index = this.emulator.bus.getLcdFlag('bgTileMap') ? 0x9c00 : 0x9800
-
-    for (let idx = 0; idx < 32 * 32; idx += 1) {
-      try {
-        const scx = this.emulator.bus.readByte(BUS_REGISTERS.scx)
-        const scy = this.emulator.bus.readByte(BUS_REGISTERS.scy)
-        const tile = this.emulator.bus.memory[index + idx]
-
-        this.renderTile(tile, (idx % 32) * 8 - scx, Math.floor(idx / 32) * 8 - scy)
-      } catch (e) {
-        // console.log(e, idx)
-      }
-    }
-  }
-
-  renderObjects() {
-    const index = BUS_REGISTERS.oam
-
-    for (let idx = 0; idx < 40; idx += 1) {
-      const y = this.emulator.bus.memory[index + idx * 4]
-      const x = this.emulator.bus.memory[index + idx * 4 + 1]
-      const tile = this.emulator.bus.memory[index + idx * 4 + 2]
-      // const flags = this.emulator.bus.memory[index + idx * 4 + 3]
-
-      if (x && y) {
-        this.renderTile(tile, x - 8, y - 16)
-        // console.log(flags)
-      }
-    }
-  }
-
-  renderTile(tileIndex: number, x: number, y: number) {
-    const tile = this.getTileData(tileIndex)
-    const map = this.tileToColorMap(tile)
-    const pixels = this.colorMapToPixels(map)
-    const rowWidth = this.width * 4
-
-    for (let row = 0; row < 8; row += 1) {
-      if (y + row + 1 < 1) {
-        continue
-      }
-      const rowPos = y * rowWidth + row * rowWidth
-      const rowPixels = pixels.slice(row * TILE_WIDTH, row * TILE_WIDTH + TILE_WIDTH)
-
-      this.lcdBuffer.set(rowPixels, rowPos + x * 4)
-    }
-  }
-
-  scaleRow(rowIdx: number, rowWidth: number) {
-    const row = this.lcdBuffer.slice(rowIdx * rowWidth, rowIdx * rowWidth + rowWidth)
-    const scaledRow = new Uint8Array(row.length)
-
-    let scaledColIdx = 0
-    for (let colIdx = 0; colIdx < LCD_WIDTH; colIdx += 1) {
-      const pixel = row.slice(colIdx * 4, colIdx * 4 + 4)
-
-      for (let scale = 0; scale < this.scale; scale += 1) {
-        scaledRow.set(pixel, scaledColIdx * 4)
-        scaledColIdx += 1
-      }
-    }
-
-    return scaledRow
-  }
-
-  scaleLcdBuffer() {
-    const rowWidth = this.width * 4
-    const scaledBuffer = new Uint8Array(this.lcdBuffer.length)
-
-    let scaledRowIdx = 0
-    for (let rowIdx = 0; rowIdx < LCD_HEIGHT; rowIdx += 1) {
-      const row = this.scaleRow(rowIdx, rowWidth)
-      for (let scale = 0; scale < this.scale; scale += 1) {
-        scaledBuffer.set(row, scaledRowIdx * rowWidth)
-        scaledRowIdx += 1
-      }
-    }
-
-    this.lcdBuffer.set(scaledBuffer, 0)
-  }
-
-  incrementScanline() {}
-
   getTileData(tileIndex: number) {
     const bgWindowTileData = this.emulator.bus.getLcdFlag('bgWindowTileData')
     const bgIndex = bgWindowTileData ? 0x8000 : 0x9000
@@ -193,29 +165,19 @@ export class PPU {
     return this.emulator.bus.readBytes(bgIndex + tileIndex * 16, 16)
   }
 
-  tileToColorMap(tile: Uint8Array) {
-    const key = tile.toString()
+  getTilePixel(index: number, col: number, row: number) {
+    const bgWindowTileData = this.emulator.bus.getLcdFlag('bgWindowTileData')
+    const bgIndex = bgWindowTileData ? 0x8000 : 0x9000
 
-    if (this.colorMapCache[key]) {
-      return this.colorMapCache[key]
+    if (!bgWindowTileData) {
+      index = convertTwosComplement(index)
     }
 
-    const result: number[][] = []
+    const pixelIndex = bgIndex + index * 16 + row * 2
+    const [left, right] = this.emulator.bus.readBytes(pixelIndex, 2)
+    const color = ((left >> (7 - col)) & 1) | (((right >> (7 - col)) & 1) << 1)
 
-    for (let row = 0; row < 8; row += 1) {
-      result.push([])
-
-      const left = tile[row * 2]
-      const right = tile[row * 2 + 1]
-
-      for (let col = 0; col < 8; col += 1) {
-        result[row][col] = ((left >> (7 - col)) & 1) | (((right >> (7 - col)) & 1) << 1)
-      }
-    }
-
-    this.colorMapCache[key] = result
-
-    return result
+    return this.rgbPalette[color]
   }
 
   convertPaletteToRGB(paletteValue: number) {
@@ -234,23 +196,5 @@ export class PPU {
       return new Uint8Array([r, g, b, a])
     })
     return rgbValues
-  }
-
-  colorMapToPixels(map: ColorMap) {
-    const pixels = new Uint8Array(8 * 8 * 4)
-    let pos = 0
-
-    const palette = this.convertPaletteToRGB(this.emulator.bus.readByte(0xff47))
-
-    map.forEach((row) => {
-      row.forEach((col) => {
-        const color = palette[col]
-        pixels.set(color, pos)
-
-        pos += 4
-      })
-    })
-
-    return pixels
   }
 }

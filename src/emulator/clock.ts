@@ -20,7 +20,7 @@ export class Clock {
   // Targets
   targetFps: number = FPS
   targetCyclesPerSecond: number = CYCLES_PER_SECOND
-  targetCyclesPerFrame: number = 0
+  targetCyclesPerFrame: number = this.targetCyclesPerSecond / this.targetFps
 
   constructor(emulator: Emulator) {
     this.emulator = emulator
@@ -37,6 +37,7 @@ export class Clock {
       }
       this.emulator.cpu.tick()
       this.emulator.ppu.tick()
+      this.addCycles(4)
       this.updateTimers()
     }
   }

@@ -34,6 +34,13 @@ export type EventMap = PPUEventMap & ClockEventMap
 
 export type ColorMap = number[][]
 
+export type OAMEntry = {
+  y: number
+  x: number
+  tile: number
+  flags: number
+}
+
 //
 // Bus
 //

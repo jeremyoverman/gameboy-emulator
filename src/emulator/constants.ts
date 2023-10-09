@@ -94,9 +94,9 @@ export const FLAGS = {
 // Cycles
 //
 
-export const FPS = 60
+export const FPS = 120
 
-export const CYCLES_PER_SECOND   = 4194304
+export const CYCLES_PER_SECOND   = 4194304  // Gamboy cock is 4.194304 MHz
 export const CYCLES_PER_DIV      = CYCLES_PER_SECOND / 16384
 
 export const DOTS_PER_SCANLINE   = 456
