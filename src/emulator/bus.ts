@@ -36,8 +36,6 @@ export class Bus {
       romSize: 0x8000 * (1 << this.readByte(0x148)),
       ramSize: RAM_SIZE_MAP[this.readByte(0x149) as RamSizeKey],
     }
-
-    console.log(this.header)
   }
 
   async loadRomFile(file: File, boot?: boolean) {

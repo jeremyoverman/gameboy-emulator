@@ -3,17 +3,7 @@ import Toolbar from "./Toolbar";
 import Lcd from "./Lcd/Lcd";
 import React from "react";
 import { EmulatorContext } from "../context/EmulatorContext";
-
-const BUTTON_MAP = {
-  w: "Up",
-  s: "Down",
-  a: "Left",
-  d: "Right",
-  m: "Start",
-  n: "Select",
-  k: "A",
-  j: "B",
-} as const;
+import { BUTTON_MAP } from "../constants";
 
 const StyledEmulator = styled.div`
 `
@@ -23,16 +13,16 @@ const Emulator = ({
 }: {
   className?: string;
 }) => {
-  const { emulator } = React.useContext(EmulatorContext);
+  const { joypadPress } = React.useContext(EmulatorContext);
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const key = BUTTON_MAP[event.key as keyof typeof BUTTON_MAP];
-      if (key) emulator?.joypad.set(key, true);
+      if (key) joypadPress(key, true);
     };
     const handleKeyUp = (event: KeyboardEvent) => {
       const key = BUTTON_MAP[event.key as keyof typeof BUTTON_MAP];
-      if (key) emulator?.joypad.set(key, false);
+      if (key) joypadPress(key, false);
     };
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
@@ -40,7 +30,7 @@ const Emulator = ({
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [emulator]);
+  }, [joypadPress]);
 
   return (
     <StyledEmulator className={className}>

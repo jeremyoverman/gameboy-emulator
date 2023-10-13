@@ -23,7 +23,6 @@ const FileUpload = ({ name, onChange, label }: Props) => {
     }
   }, [file])
 
-
   return (
     <>
       <label htmlFor={`file-${name}`}>{label}: </label>&nbsp;

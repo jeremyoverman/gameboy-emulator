@@ -1,13 +1,5 @@
 import { Emitter, Emulator } from './emulator'
-import {
-  LCD_HEIGHT,
-  BUS_REGISTERS,
-  TILE_WIDTH,
-  LCD_WIDTH,
-  DOTS_PER_SCANLINE,
-  FRAME_HEIGHT,
-  BACKGROUND_WIDTH,
-} from './constants'
+import { LCD_HEIGHT, BUS_REGISTERS, TILE_WIDTH, LCD_WIDTH, DOTS_PER_SCANLINE, FRAME_HEIGHT } from './constants'
 import { ColorMap, OAMEntry } from './types'
 import { convertTwosComplement } from './utils'
 import { PPUEventMap } from './types'
@@ -50,7 +42,7 @@ export class PPU {
 
     this.setScale(this.scale)
     this.setRGBPalette()
-    this.emulator.bus.writeByte(BUS_REGISTERS.stat, 0b00000001)
+    this.emulator.bus.writeByte(BUS_REGISTERS.stat, 1)
   }
 
   resetFrames() {

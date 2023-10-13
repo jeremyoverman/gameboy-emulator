@@ -7,14 +7,14 @@ const SettingsPanel = ({
 }: {
   className?: string
 }) => {
-  const { emulator, setUseBootRom, useBootRom } = useEmulator();
+  const { loadRom, setUseBootRom, useBootRom } = useEmulator();
 
   const setBootRom = (file: File) => {
-    emulator?.loadBootRom(file);
+    loadRom(file, true);
   }
 
   const setGameRom = (file: File) => {
-    emulator?.bus.loadRomFile(file);
+    loadRom(file);
   }
 
   const handleToggleBootRom = () => {

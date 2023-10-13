@@ -17,6 +17,7 @@
     "styled-components": "^6.0.7"
   },
   "devDependencies": {
+    "@simbathesailor/use-what-changed": "^2.0.0",
     "@types/jest": "^29.5.4",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",

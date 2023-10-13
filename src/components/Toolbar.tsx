@@ -14,32 +14,16 @@ const StyledToolbar = styled.div`
 
 
 const Toolbar = () => {
-  const { reset, emulator, paused } = useEmulator();
-
-  const handleRun = () => {
-    if (paused) {
-      emulator?.clock.resume();
-    } else {
-      emulator?.clock.pause();
-    }
-  }
-
-  const handleStep = () => {
-    emulator?.cpu.tick();
-  }
-
-  const handleReset = () => {
-    reset();
-  }
+  const { reset, pause, resume, tick, paused } = useEmulator();
 
   return (
     <StyledToolbar>
-      <button type="button" onClick={handleRun}>
+      <button type="button" onClick={() => paused ? resume() : pause()}>
         {paused ? 'Run' : 'Pause'}
       </button>
 
-      <button type="button" onClick={handleReset}>Reset</button>
-      <button type="button" onClick={handleStep}>Step</button>
+      <button type="button" onClick={reset}>Reset</button>
+      <button type="button" onClick={tick}>Step</button>
     </StyledToolbar>
   )
 }

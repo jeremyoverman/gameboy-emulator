@@ -1,7 +1,8 @@
 import React, { createContext, useEffect } from "react";
-import { Emulator } from '../emulator/emulator';
 import useFile from "../hooks/useFile";
-import { EventMap } from "../emulator/types";
+import EmulatorWorker from '../workers/EmulatorWorker?worker'
+import { BUTTON_MAP } from "../constants";
+import { Button } from "../emulator/types";
 
 export type LCD = {
   data: Uint8ClampedArray;
@@ -10,7 +11,6 @@ export type LCD = {
 }
 
 interface EmulatorContextType {
-  emulator?: Emulator;
   paused: boolean;
   vblankCounter: number;
   lcd: LCD;
@@ -18,6 +18,11 @@ interface EmulatorContextType {
   fps: number;
   reset: () => void;
   setUseBootRom: (enabled: boolean) => void;
+  pause: () => void;
+  resume: () => void;
+  tick: () => void;
+  loadRom: (rom: File, bootRom?: boolean) => void;
+  joypadPress: (key: Button, pressed: boolean) => void;
 }
 
 const initialValue: EmulatorContextType = {
@@ -32,6 +37,11 @@ const initialValue: EmulatorContextType = {
   },
   reset: () => { },
   setUseBootRom: () => { },
+  pause: () => { },
+  resume: () => { },
+  tick: () => { },
+  loadRom: () => { },
+  joypadPress: () => { },
 }
 
 export const EmulatorContext = createContext<EmulatorContextType>(initialValue);
@@ -39,102 +49,100 @@ export const EmulatorContext = createContext<EmulatorContextType>(initialValue);
 export const EmulatorProvider = ({
   children
 }: { children: React.ReactNode }) => {
+  // Worker
+  const worker = React.useMemo(() => new EmulatorWorker(), []);
+
+  // LCD
   const [lcd, setLcd] = React.useState<LCD>(initialValue.lcd);
-  const [emulator, setEmulator] = React.useState<Emulator>();
-  const [paused, setPaused] = React.useState(initialValue.paused);
-  const [vblankCounter, setVblankCounter] = React.useState(initialValue.vblankCounter);
-  const [useBootRom, setUseBootRom] = React.useState(initialValue.useBootRom);
   const [fps, setFps] = React.useState(0);
 
-  const bootrom = useFile('bootrom');
-  const gamerom = useFile('gamerom');
+  // Clock
+  const [paused, setPaused] = React.useState(initialValue.paused);
+  const pause = React.useCallback(() => worker.postMessage({ type: 'pause' }), [worker]);
+  const resume = React.useCallback(() => worker.postMessage({ type: 'resume' }), [worker]);
+  const tick = React.useCallback(() => worker.postMessage({ type: 'tick' }), [worker]);
 
-  const reset = () => {
+  // Counters
+  const [vblankCounter, setVblankCounter] = React.useState(initialValue.vblankCounter);
+
+  // Roms
+  const [useBootRom, setUseBootRom] = React.useState(initialValue.useBootRom);
+  const { file: bootrom } = useFile('bootrom');
+  const { file: gamerom } = useFile('gamerom');
+
+  // Emulator
+  const joypadPress = React.useCallback((button: Button, pressed: boolean) => worker.postMessage({
+    type: 'joypadPress',
+    data: {
+      button,
+      pressed
+    }
+  }), [worker]);
+  const reset = React.useCallback(() => {
     setPaused(initialValue.paused);
     setVblankCounter(initialValue.vblankCounter);
     setLcd(initialValue.lcd)
-    setEmulator(undefined);
-  }
+  }, [])
 
-  const loadRoms = () => {
-    if (bootrom?.file) {
-      emulator?.loadBootRom(bootrom.file);
-    }
-
-    if (gamerom?.file) {
-      emulator?.bus.loadRomFile(gamerom.file);
-    }
-  }
+  const loadRom = React.useCallback((rom: File, bootRom: boolean = false) => {
+    worker.postMessage({
+      type: 'loadRom', data: {
+        rom,
+        bootRom
+      }
+    })
+  }, [worker])
 
   useEffect(() => {
-    if (!emulator) {
-      const emulatorInst = new Emulator();
-
-      if (!useBootRom) {
-        emulatorInst.bootstrapWithoutRom();
-      }
-      setEmulator(emulatorInst);
-      loadRoms();
+    if (bootrom) {
+      loadRom(bootrom, true);
     }
 
-    if (!emulator) {
-      return;
+    if (gamerom) {
+      loadRom(gamerom);
     }
 
-    const handlers: { [key in keyof EventMap]?: () => void } = {
-      vblank: () => {
+    if (!useBootRom) {
+      worker.postMessage({ type: 'bootstrapWithoutRom' })
+    }
+  }, [worker, loadRom, bootrom, gamerom, useBootRom])
+
+  useEffect(() => {
+    worker.onmessage = (event) => {
+      const { data } = event.data;
+
+      if (event.data.type === 'vblank') {
         setVblankCounter((prev) => prev + 1);
-      },
-      pause: () => {
-        setPaused(emulator.clock.paused)
-      },
-      resume: () => {
-        setPaused(emulator.clock.paused)
-      },
-      render: () => {
-        setFps(emulator.ppu.fps);
+      } else if (event.data.type === 'pause') {
+        setPaused(true)
+      } else if (event.data.type === 'resume') {
+        setPaused(false)
+      } else if (event.data.type === 'render') {
+        setFps(data.fps);
 
         setLcd({
-          width: emulator.ppu.width,
-          height: emulator.ppu.height,
-          data: emulator.ppu.lcdBuffer,
+          width: data.width,
+          height: data.height,
+          data: data.lcdBuffer,
         });
-      },
-    }
-
-    Object.keys(handlers).forEach((event) => {
-      const handler = handlers[event as keyof typeof handlers];
-
-      if (!handler) {
-        return;
       }
-
-      emulator.on((event as keyof typeof handlers), handler);
-    });
-
-    return () => {
-      Object.keys(handlers).forEach((event) => {
-        const handler = handlers[event as keyof typeof handlers];
-
-        if (!handler) {
-          return;
-        }
-
-        emulator.off((event as keyof typeof handlers), handler);
-      });
-    };
-  }, [emulator]);
+    }
+  }, [worker, pause, resume, tick, loadRom]);
 
   return (
     <EmulatorContext.Provider value={{
-      emulator,
       vblankCounter,
       paused,
       lcd,
       reset,
       useBootRom,
       setUseBootRom,
-      fps
+      fps,
+      pause,
+      resume,
+      tick,
+      loadRom,
+      joypadPress
     }}>
       {children}
     </EmulatorContext.Provider>
