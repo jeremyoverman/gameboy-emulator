@@ -45,8 +45,29 @@ export type OAMEntry = {
 // Bus
 //
 
+export type RamSizeKey = keyof typeof constants.RAM_SIZE_MAP
+
+export type CartType = {
+  mbc?: MBC
+  ram?: boolean
+  battery?: boolean
+  timer?: boolean
+  rumble?: boolean
+  sensor?: boolean
+}
+
+export type Header = {
+  title: string
+  colorGB: boolean
+  superGB: boolean
+  cartType: CartType
+  romSize: number
+  ramSize: number
+}
+
 export type Interrupt = keyof typeof constants.INTERRUPTS
 export type RstJumpAddresses = (typeof constants.RST_JUMP_ADDRESSES)[number]
+export type MBC = (typeof constants.MBCS)[number]
 
 //
 // Joypad

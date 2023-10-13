@@ -49,8 +49,6 @@ const Lcd = ({
       const data = new ImageData(lcd.data, lcd.width, lcd.height);
       ctx.putImageData(data, 0, 0);
       writeText(`FPS: ${fps.toFixed(0)}`, 0, 0);
-      // ctx.fillStyle = 'red';
-      // ctx.fillRect(0, 0, 160, 144)
     }
   }, [ctx, lcd, fps])
 

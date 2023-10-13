@@ -2,10 +2,14 @@
 // Display Data
 //
 
-export const LCD_WIDTH      = 160
-export const LCD_HEIGHT     = 144
-export const FRAME_HEIGHT   = 153
-export const TILE_WIDTH = 8 * 4
+import { CartType } from "./types"
+
+export const LCD_WIDTH         = 160
+export const LCD_HEIGHT        = 144
+export const FRAME_HEIGHT      = 153
+export const TILE_WIDTH        = 8 * 4
+export const BACKGROUND_WIDTH  = 256
+export const BACKGROUND_HEIGHT = 256
 
 export const LCD_FLAGS  = {
   enable:           0b10000000,
@@ -19,7 +23,7 @@ export const LCD_FLAGS  = {
 } as const
 
 //
-// Memory
+// Bus
 //
 
 export const RST_JUMP_ADDRESSES = [0x0000, 0x0008, 0x0010, 0x0018, 0x0020, 0x0028, 0x0030, 0x0038]
@@ -27,10 +31,15 @@ export const INTERRUPT_PRIORITY = ['vblank', 'lcdstat', 'timer', 'serial', 'joyp
 
 export const INTERRUPTS = {
   vblank:  { jump: 0x0040, flag: 0b00001, },
+
   lcdstat: { jump: 0x0048, flag: 0b00010, },
+
   timer:   { jump: 0x0050, flag: 0b00100, },
+
   serial:  { jump: 0x0058, flag: 0b01000, },
+
   joypad:  { jump: 0x0060, flag: 0b10000, },
+
 } as const
 
 export const BUS_REGISTERS = {
@@ -68,6 +77,48 @@ export const BUTTONS = {
   Select: 0b00000100,
   Start:  0b00001000,
 }
+
+export const MBCS = ['mbc1', 'mbc2', 'mbc3', 'mbc5', 'mbc6', 'mbc7'] as const
+
+export const CART_TYPES: Record<number, CartType> = {
+  0x00: { },
+  0x01: { mbc: 'mbc1', },
+  0x02: { mbc: 'mbc1', ram: true, },
+  0x03: { mbc: 'mbc1', ram: true, battery: true, },
+  0x05: { mbc: 'mbc2', },
+  0x06: { mbc: 'mbc2', battery: true, },
+  0x08: { ram: true, },
+  0x09: { ram: true, battery: true, },
+  0x0B: { },
+  0x0C: { ram: true, },
+  0x0D: { ram: true, battery: true, },
+  0x0F: { mbc: 'mbc3', battery: true, timer: true, },
+  0x10: { mbc: 'mbc3', ram: true, battery: true, timer: true, },
+  0x11: { mbc: 'mbc3', },
+  0x12: { mbc: 'mbc3', ram: true, },
+  0x13: { mbc: 'mbc3', ram: true, battery: true, },
+  0x19: { mbc: 'mbc5', },
+  0x1A: { mbc: 'mbc5', ram: true, },
+  0x1B: { mbc: 'mbc5', ram: true, battery: true, },
+  0x1C: { mbc: 'mbc5', rumble: true, },
+  0x1D: { mbc: 'mbc5', ram: true, rumble: true, },
+  0x1E: { mbc: 'mbc5', ram: true, battery: true, rumble: true },
+  0x20: { mbc: 'mbc6', },
+  0x22: { mbc: 'mbc7', ram: true, battery: true, rumble: true, sensor: true, },
+  0xFC: { },
+  0xFD: { },
+  0xFE: { },
+  0xFF: { ram: true, battery: true, },
+}
+
+export const RAM_SIZE_MAP = {
+  0x00: 0,
+  0x01: 2 * 1024,
+  0x02: 8 * 1024,
+  0x03: 32 * 1024,
+  0x04: 128 * 1024,
+  0x05: 64 * 1024,
+} as const
 
 //
 // Registers

@@ -21,7 +21,7 @@ const FileUpload = ({ name, onChange, label }: Props) => {
 
       onChange(file);
     }
-  }, [file, fileRef, onChange])
+  }, [file])
 
 
   return (
